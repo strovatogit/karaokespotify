@@ -41,6 +41,10 @@ a{color:var(--acc)}
 #cur .w{color:var(--fg);transition:color .12s linear}
 #cur .w.on{color:var(--sung)}
 #cur.fade .txt{animation:enter .22s ease-out}
+.tr{display:block;font-size:.52em;font-weight:600;color:rgba(255,255,255,.62);margin-top:.3em;line-height:1.15;font-style:italic}
+body.notr .tr{display:none}
+#plain .pl{margin:0 0 .7em}
+#plain .tr{font-size:.6em;margin-top:.15em}
 @keyframes enter{from{opacity:0;transform:translateY(5%)}to{opacity:1;transform:none}}
 body.nonext #next{display:none}
 body.nonext #stage{grid-template-rows:11fr 89fr}
@@ -49,7 +53,7 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
   #prev{display:none}
   body.nonext #stage{grid-template-rows:1fr}
 }
-#plain{position:absolute;inset:0;overflow:auto;padding:14vmin 6vw 22vmin;font-size:clamp(22px,6.5vmin,64px);font-weight:700;line-height:1.3;text-align:center;white-space:pre-wrap}
+#plain{position:absolute;inset:0;overflow:auto;padding:14vmin 6vw 22vmin;font-size:calc(var(--ps,1) * clamp(22px,6.5vmin,64px));font-weight:700;line-height:1.3;text-align:center;white-space:pre-wrap}
 #msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8vmin;gap:2vmin}
 #msg .big{font-size:clamp(26px,8vmin,80px);font-weight:800}
 #msg .small{font-size:clamp(15px,3.4vmin,30px);color:var(--dim)}
@@ -65,7 +69,11 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #trk{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #trk span{color:#aaa}
 #src{font-size:12px;color:#888;white-space:nowrap}
-#off{min-width:4.2em;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
+#off,#size{min-width:4.2em;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
+#size{min-width:3em}
+.grp{display:flex;align-items:center;gap:6px}
+button.big{font-weight:800;min-width:2.8em}
+button.on{background:rgba(30,215,96,.3)}
 </style>
 </head>
 <body>
@@ -104,10 +112,10 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
   <div id="hud">
     <div class="top"><div id="trk"></div><span id="src"></span></div>
     <div class="bot">
-      <button id="minus" title="Il testo arriva troppo presto">Ritarda</button>
-      <span id="off">0,00 s</span>
-      <button id="plus" title="Il testo arriva troppo tardi">Anticipa</button>
-      <button id="toggleNext">Riga successiva</button>
+      <div class="grp"><button id="smaller" class="big" title="Testo più piccolo">−</button><span id="size">Max</span><button id="bigger" class="big" title="Testo più grande">+</button></div>
+      <div class="grp"><button id="minus" title="Il testo arriva troppo presto">Ritarda</button><span id="off">0,00 s</span><button id="plus" title="Il testo arriva troppo tardi">Anticipa</button></div>
+      <button id="toggleTr">Traduzione</button>
+      <button id="toggleNext">Riga succ.</button>
       <button id="fs">Schermo intero</button>
       <button id="logout">Esci</button>
     </div>
@@ -175,7 +183,8 @@ async function accessToken() {
 
 /* ================= Stato ================= */
 const S = { track: null, lines: null, words: null, sing: 1500, idx: -2,
-  basePos: 0, baseT: 0, playing: false, offset: store.get("off", 0), demo: false };
+  basePos: 0, baseT: 0, playing: false, offset: store.get("off", 0), demo: false,
+  size: store.get("size", 10), trans: null, plain: null };
 const pos = () => S.basePos + (S.playing ? performance.now() - S.baseT : 0) + S.offset;
 
 /* ================= Spotify: brano in corso ================= */
@@ -258,10 +267,54 @@ function parseLRC(s) {
   }
   return out.sort((a, b) => a.t - b.t);
 }
+/* ================= Traduzione in italiano ================= */
+const trCache = new Map(); // id brano -> Map(testo originale -> traduzione) oppure "it"
+async function gtx(text) {
+  const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=it&dt=t&q=" + encodeURIComponent(text));
+  if (!r.ok) throw new Error("translate " + r.status);
+  const j = await r.json();
+  return { text: (j[0] || []).map(x => (x && x[0]) || "").join(""), lang: j[2] };
+}
+async function translateAll(texts) {
+  const map = new Map(); let lang = null;
+  // blocchi di righe separate da "a capo", per poche richieste
+  const chunks = []; let cur = [];
+  for (const t of texts) { if (cur.length && (cur.join("\n").length + t.length > 1200)) { chunks.push(cur); cur = []; } cur.push(t); }
+  if (cur.length) chunks.push(cur);
+  for (const ch of chunks) {
+    const res = await gtx(ch.join("\n"));
+    if (!lang) { lang = res.lang; if (lang === "it") return "it"; }
+    let out = res.text.split("\n").map(s => s.trim());
+    if (out.length !== ch.length) out = await Promise.all(ch.map(t => gtx(t).then(r => r.text.trim(), () => "")));
+    ch.forEach((t, k) => { if (out[k]) map.set(t, out[k]); });
+  }
+  return map;
+}
+async function ensureTranslation() {
+  if (document.body.classList.contains("notr") || !S.track || S.demo) return;
+  const id = S.track.id;
+  const texts = S.lines ? S.lines.map(l => l.text) : S.plain ? S.plain.split(/\r?\n/) : null;
+  if (!texts) return;
+  let res = trCache.get(id);
+  if (!res) {
+    const uniq = [...new Set(texts.map(t => t.trim()).filter(t => t && /\p{L}/u.test(t)))];
+    try { res = await translateAll(uniq); trCache.set(id, res); }
+    catch (e) { if (S.track && S.track.id === id) setSrc($("#src").textContent.split(" · trad")[0] + " · traduzione non disponibile"); return; }
+  }
+  if (!S.track || S.track.id !== id) return;
+  S.trans = res === "it" ? null : res;
+  if (S.lines) S.idx = -2; else if (S.plain) renderPlain();
+}
+function trOf(t) {
+  if (!S.trans || !t) return "";
+  const x = S.trans.get(t.trim()) || "";
+  return x && x.toLowerCase() !== t.trim().toLowerCase() ? x : "";
+}
+
 async function newTrack() {
   const tr = S.track;
   $("#trk").innerHTML = "<b>" + esc(tr.name) + "</b> <span>· " + esc(tr.artist) + "</span>";
-  setSrc("");
+  setSrc(""); S.trans = null;
   if (tr.type === "episode") return showMsg(tr.name, "Podcast: nessun testo");
   showMsg("♪", "Cerco il testo…");
   let res = null;
@@ -270,9 +323,9 @@ async function newTrack() {
   if (res && res.instrumental) return showMsg("♪", "Brano strumentale");
   if (res && res.syncedLyrics) {
     const L = parseLRC(res.syncedLyrics);
-    if (L.length) { setSrc("LRCLIB · sincronizzato"); return showLines(L); }
+    if (L.length) { setSrc("LRCLIB · sincronizzato"); showLines(L); return ensureTranslation(); }
   }
-  if (res && res.plainLyrics) { setSrc("LRCLIB · non sincronizzato"); return showPlain(res.plainLyrics); }
+  if (res && res.plainLyrics) { setSrc("LRCLIB · non sincronizzato"); showPlain(res.plainLyrics); return ensureTranslation(); }
   showMsg(tr.name, "Testo sincronizzato non trovato");
 }
 
@@ -282,9 +335,15 @@ function setMode(m) {
   $("#msg").classList.toggle("hidden", m !== "msg");
   $("#plain").classList.toggle("hidden", m !== "plain");
 }
-function showMsg(a, b) { S.lines = null; S.words = null; $("#msg .big").textContent = a; $("#msg .small").textContent = b || ""; setMode("msg"); }
-function showPlain(t) { S.lines = null; S.words = null; const p = $("#plain"); p.textContent = t; p.scrollTop = 0; setMode("plain"); }
-function showLines(L) { S.lines = L; S.idx = -2; setMode("lines"); }
+function showMsg(a, b) { S.lines = null; S.plain = null; S.words = null; $("#msg .big").textContent = a; $("#msg .small").textContent = b || ""; setMode("msg"); }
+function showPlain(t) { S.lines = null; S.words = null; S.plain = t; renderPlain(); $("#plain").scrollTop = 0; setMode("plain"); }
+function renderPlain() {
+  $("#plain").innerHTML = S.plain.split(/\r?\n/).map(l => {
+    const tr = trOf(l);
+    return '<div class="pl">' + (esc(l) || "&nbsp;") + (tr ? '<span class="tr">' + esc(tr) + "</span>" : "") + "</div>";
+  }).join("");
+}
+function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; setMode("lines"); }
 function setSrc(s) { $("#src").textContent = s; }
 
 function lineText(i) { return (!S.lines || i < 0 || i >= S.lines.length) ? "" : (S.lines[i].text || "♪"); }
@@ -298,7 +357,9 @@ function renderLines(i) {
   setLine("#prev", lineText(i - 1));
   const cur = $("#cur"), txt = cur.firstElementChild;
   const t = i < 0 ? "♪" : lineText(i);
-  txt.innerHTML = t.split(/(\s+)/).map(w => /^\s*$/.test(w) ? w : '<span class="w">' + esc(w) + "</span>").join("");
+  const tr = i < 0 ? "" : trOf(S.lines[i].text);
+  txt.innerHTML = t.split(/(\s+)/).map(w => /^\s*$/.test(w) ? w : '<span class="w">' + esc(w) + "</span>").join("")
+    + (tr ? '<span class="tr">' + esc(tr) + "</span>" : "");
   cur.classList.remove("fade"); void cur.offsetWidth; cur.classList.add("fade");
   setLine("#next", lineText(i + 1));
   // parole: avanzamento stimato in base alla lunghezza
@@ -329,7 +390,7 @@ function frame() {
 function fitBox(box) {
   const inner = box.firstElementChild, W = box.clientWidth, H = box.clientHeight;
   if (!inner || !W || !H || !inner.textContent.trim()) return;
-  let lo = 8, hi = Math.max(9, Math.floor(H));
+  let lo = 8, hi = Math.max(9, Math.floor(Math.min(H, sizeCap())));
   while (hi - lo > 1) {
     const m = (lo + hi) >> 1; inner.style.fontSize = m + "px";
     if (inner.scrollWidth <= W + 0.5 && inner.offsetHeight <= H) lo = m; else hi = m;
@@ -337,6 +398,18 @@ function fitBox(box) {
   inner.style.fontSize = lo + "px";
 }
 function fitAll() { ["#prev", "#cur", "#next"].forEach(s => fitBox($(s))); }
+
+/* Grandezza: livelli 1–9 = tetto fisso (righe tutte uguali), 10 = Max (riempie lo spazio) */
+function sizeCap() {
+  if (S.size >= 10) return Infinity;
+  return Math.min(innerWidth, innerHeight) * (0.035 + 0.03 * S.size);
+}
+function setSize(n) {
+  S.size = Math.max(1, Math.min(10, n)); store.set("size", S.size);
+  $("#size").textContent = S.size >= 10 ? "Max" : S.size + "/10";
+  document.documentElement.style.setProperty("--ps", S.size >= 10 ? 1.25 : (0.45 + 0.08 * S.size).toFixed(2));
+  fitAll();
+}
 
 /* ================= Comandi ================= */
 let hudTimer = null;
@@ -353,18 +426,24 @@ function toSetup(err) {
 function toApp() {
   $("#setup").classList.add("hidden"); $("#app").classList.remove("hidden");
   document.body.classList.toggle("nonext", !store.get("next", true));
-  setOff(); showHud(); wake();
+  const trOn = store.get("tr", true);
+  document.body.classList.toggle("notr", !trOn); $("#toggleTr").classList.toggle("on", trOn);
+  setOff(); setSize(S.size); showHud(); wake();
   if (!S.demo) { showMsg("♪", "Collegamento a Spotify…"); poll(); }
 }
 function startDemo() {
   S.demo = true; toApp();
-  const lrc = ["[00:01.00]Questa è una demo del karaoke", "[00:04.50]le parole si accendono piano piano",
-    "[00:08.00]", "[00:10.00]gira il telefono in orizzontale", "[00:13.50]e il testo si ingrandisce da solo",
-    "[00:17.00]righe corte", "[00:19.00]GRANDI!", "[00:21.00]una riga molto più lunga del solito per vedere come va a capo senza tagliare nessuna parola",
-    "[00:27.00]fine della demo"].join("\n");
+  const demo = [["00:01.00", "This is a karaoke demo", "Questa è una demo del karaoke"],
+    ["00:04.50", "the words light up one by one", "le parole si accendono una alla volta"],
+    ["00:08.00", "", ""], ["00:10.00", "turn your phone sideways", "gira il telefono in orizzontale"],
+    ["00:13.50", "use plus and minus to change the size", "usa più e meno per cambiare la grandezza"],
+    ["00:17.00", "short lines", "righe corte"], ["00:19.00", "BIG!", "GRANDI!"],
+    ["00:21.00", "a much longer line than usual to see how it wraps without cutting any word", "una riga molto più lunga del solito per vedere come va a capo senza tagliare nessuna parola"],
+    ["00:27.00", "end of the demo", "fine della demo"]];
   S.track = { id: "demo", name: "Demo", artist: "Karaoke" };
   $("#trk").innerHTML = "<b>Demo</b> <span>· nessun accesso a Spotify</span>"; setSrc("demo");
-  showLines(parseLRC(lrc)); S.basePos = 0; S.baseT = performance.now(); S.playing = true;
+  showLines(parseLRC(demo.map(d => "[" + d[0] + "]" + d[1]).join("\n")));
+  S.trans = new Map(demo.filter(d => d[1]).map(d => [d[1], d[2]])); S.basePos = 0; S.baseT = performance.now(); S.playing = true;
   clearInterval(S.demoLoop);
   S.demoLoop = setInterval(() => { if (!S.demo) return clearInterval(S.demoLoop); if (pos() > 30000) { S.basePos = 0; S.baseT = performance.now(); } }, 500);
 }
@@ -378,7 +457,15 @@ $("#copyRedir").onclick = e => {
 };
 $("#plus").onclick = () => { S.offset += 250; setOff(); showHud(); };
 $("#minus").onclick = () => { S.offset -= 250; setOff(); showHud(); };
-$("#toggleNext").onclick = () => { const on = document.body.classList.toggle("nonext"); store.set("next", !on); requestAnimationFrame(fitAll); showHud(); };
+$("#bigger").onclick = () => { setSize(S.size + 1); showHud(); };
+$("#smaller").onclick = () => { setSize(S.size - 1); showHud(); };
+$("#toggleTr").onclick = () => {
+  const off = document.body.classList.toggle("notr"); store.set("tr", !off);
+  $("#toggleTr").classList.toggle("on", !off);
+  if (!off) ensureTranslation();
+  requestAnimationFrame(fitAll); showHud();
+};
+$("#toggleNext").onclick =() => { const on = document.body.classList.toggle("nonext"); store.set("next", !on); requestAnimationFrame(fitAll); showHud(); };
 $("#fs").onclick = () => {
   const d = document, el = d.documentElement;
   try {
