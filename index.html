@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Karaoke Spotify</title>
+<style>
+:root{--bg:#000;--fg:#fff;--dim:rgba(255,255,255,.4);--acc:#1ed760;--sung:#1ed760}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+button{font:inherit;font-size:15px;color:inherit;background:rgba(255,255,255,.14);border:0;border-radius:999px;padding:.6em 1em;cursor:pointer;white-space:nowrap}
+button:active{background:rgba(255,255,255,.28)}
+button.primary{background:var(--acc);color:#000;font-weight:700}
+a{color:var(--acc)}
+.hidden{display:none!important}
+
+/* ---------- configurazione ---------- */
+#setup{position:fixed;inset:0;overflow:auto;padding:max(24px,env(safe-area-inset-top)) 20px 40px;display:flex;justify-content:center}
+#setup .card{max-width:560px;width:100%}
+#setup h1{font-size:28px;margin:8px 0 4px}
+#setup p,#setup li{color:#cfcfcf;line-height:1.5;font-size:15px}
+#setup ol{padding-left:22px}
+#setup label{display:block;margin:18px 0 6px;font-weight:600}
+#setup input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #333;background:#111;color:#fff;font:inherit;font-size:16px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;word-break:break-all;background:#111;border:1px solid #333;border-radius:10px;padding:10px 12px;color:#ddd}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.err{color:#ff6b6b;min-height:1.2em}
+
+/* ---------- karaoke ---------- */
+#app{position:fixed;inset:0}
+#stage{position:absolute;inset:0;display:grid;gap:1.2vmin;
+  padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  grid-template-rows:11fr 65fr 24fr}
+.box{position:relative;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.txt{display:block;width:100%;text-align:center;font-weight:800;line-height:1.1;letter-spacing:-.01em;text-wrap:balance;overflow-wrap:normal;word-break:normal}
+#prev .txt,#next .txt{color:var(--dim);font-weight:700}
+#cur .w{color:var(--fg);transition:color .12s linear}
+#cur .w.on{color:var(--sung)}
+#cur.fade .txt{animation:enter .22s ease-out}
+@keyframes enter{from{opacity:0;transform:translateY(5%)}to{opacity:1;transform:none}}
+body.nonext #next{display:none}
+body.nonext #stage{grid-template-rows:11fr 89fr}
+@media (orientation:landscape){
+  #stage{grid-template-rows:77fr 23fr}
+  #prev{display:none}
+  body.nonext #stage{grid-template-rows:1fr}
+}
+#plain{position:absolute;inset:0;overflow:auto;padding:14vmin 6vw 22vmin;font-size:clamp(22px,6.5vmin,64px);font-weight:700;line-height:1.3;text-align:center;white-space:pre-wrap}
+#msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8vmin;gap:2vmin}
+#msg .big{font-size:clamp(26px,8vmin,80px);font-weight:800}
+#msg .small{font-size:clamp(15px,3.4vmin,30px);color:var(--dim)}
+
+/* ---------- comandi (si nascondono da soli) ---------- */
+#hud{position:absolute;inset:0;pointer-events:none;transition:opacity .35s}
+#hud.off{opacity:0}
+#hud .top,#hud .bot{position:absolute;left:0;right:0;display:flex;align-items:center;gap:8px;pointer-events:auto;
+  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 14px max(12px,env(safe-area-inset-left))}
+#hud .top{top:0;background:linear-gradient(#000e,#0000)}
+#hud .bot{bottom:0;padding-top:14px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:linear-gradient(#0000,#000e);justify-content:center;flex-wrap:wrap}
+#hud.off .top,#hud.off .bot{pointer-events:none}
+#trk{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#trk span{color:#aaa}
+#src{font-size:12px;color:#888;white-space:nowrap}
+#off{min-width:4.2em;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
+</style>
+</head>
+<body>
+
+<section id="setup" class="hidden"><div class="card">
+  <h1>🎤 Karaoke per Spotify</h1>
+  <p>Mostra il testo sincronizzato del brano che stai ascoltando su Spotify (telefono, PC o casse). Testi da LRCLIB.</p>
+  <ol>
+    <li>Apri <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> e crea un'app, spuntando <i>Web API</i>.</li>
+    <li>In <i>Redirect URIs</i> aggiungi esattamente questo indirizzo:</li>
+  </ol>
+  <div class="mono" id="redir"></div>
+  <div class="row"><button id="copyRedir">Copia indirizzo</button></div>
+  <ol start="3">
+    <li>In <i>User Management</i> aggiungi nome ed email Spotify dei familiari che la useranno (massimo 5).</li>
+    <li>Incolla qui sotto il <i>Client ID</i> dell'app.</li>
+  </ol>
+  <label for="cid">Client ID</label>
+  <input id="cid" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="es. 1a2b3c4d…">
+  <div class="row">
+    <button class="primary" id="login">Accedi con Spotify</button>
+    <button id="demo">Prova la demo</button>
+  </div>
+  <p class="err" id="setupErr"></p>
+  <p class="err" id="warn"></p>
+</div></section>
+
+<section id="app" class="hidden">
+  <div id="stage">
+    <div class="box" id="prev"><span class="txt"></span></div>
+    <div class="box" id="cur"><span class="txt"></span></div>
+    <div class="box" id="next"><span class="txt"></span></div>
+  </div>
+  <div id="plain" class="hidden"></div>
+  <div id="msg" class="hidden"><div class="big"></div><div class="small"></div></div>
+  <div id="hud">
+    <div class="top"><div id="trk"></div><span id="src"></span></div>
+    <div class="bot">
+      <button id="minus" title="Il testo arriva troppo presto">Ritarda</button>
+      <span id="off">0,00 s</span>
+      <button id="plus" title="Il testo arriva troppo tardi">Anticipa</button>
+      <button id="toggleNext">Riga successiva</button>
+      <button id="fs">Schermo intero</button>
+      <button id="logout">Esci</button>
+    </div>
+  </div>
+</section>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("kk_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("kk_" + k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem("kk_" + k); } catch (e) {} }
+};
+const REDIRECT = location.origin + location.pathname;
+const SCOPES = "user-read-currently-playing user-read-playback-state";
+
+/* ================= OAuth PKCE ================= */
+function rnd(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, b => b.toString(16).padStart(2, "0")).join(""); }
+async function challenge(v) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v));
+  return btoa(String.fromCharCode(...new Uint8Array(d))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+async function login() {
+  const cid = $("#cid").value.trim();
+  if (!cid) { $("#setupErr").textContent = "Inserisci il Client ID."; return; }
+  if (!window.isSecureContext || !crypto.subtle) { $("#setupErr").textContent = "Serve un indirizzo https:// (o http://127.0.0.1)."; return; }
+  store.set("cid", cid);
+  const v = rnd(48), st = rnd(8);
+  store.set("v", v); store.set("st", st);
+  const p = new URLSearchParams({ client_id: cid, response_type: "code", redirect_uri: REDIRECT, scope: SCOPES,
+    code_challenge_method: "S256", code_challenge: await challenge(v), state: st });
+  location.href = "https://accounts.spotify.com/authorize?" + p;
+}
+async function tokenReq(params) {
+  const r = await fetch("https://accounts.spotify.com/api/token", { method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(params) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error === "invalid_grant" ? "invalid_grant" : (j.error_description || j.error || "HTTP " + r.status));
+  const old = store.get("tok", {}) || {};
+  const tok = { access: j.access_token, refresh: j.refresh_token || old.refresh, exp: Date.now() + (j.expires_in - 60) * 1000 };
+  store.set("tok", tok);
+  return tok;
+}
+async function handleRedirect() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("code") && !q.has("error")) return;
+  history.replaceState(null, "", REDIRECT);
+  if (q.get("error")) throw new Error("Accesso annullato (" + q.get("error") + ").");
+  if (q.get("state") !== store.get("st")) throw new Error("Risposta di accesso non valida, riprova.");
+  await tokenReq({ client_id: store.get("cid"), grant_type: "authorization_code", code: q.get("code"),
+    redirect_uri: REDIRECT, code_verifier: store.get("v") });
+  store.del("v"); store.del("st");
+}
+let refreshing = null;
+async function accessToken() {
+  const t = store.get("tok", null);
+  if (!t || !t.access) throw new Error("nologin");
+  if (Date.now() < t.exp) return t.access;
+  if (!refreshing) refreshing = tokenReq({ client_id: store.get("cid"), grant_type: "refresh_token", refresh_token: t.refresh })
+    .finally(() => { refreshing = null; });
+  return (await refreshing).access;
+}
+
+/* ================= Stato ================= */
+const S = { track: null, lines: null, words: null, sing: 1500, idx: -2,
+  basePos: 0, baseT: 0, playing: false, offset: store.get("off", 0), demo: false };
+const pos = () => S.basePos + (S.playing ? performance.now() - S.baseT : 0) + S.offset;
+
+/* ================= Spotify: brano in corso ================= */
+let pollTimer = null;
+async function poll() {
+  clearTimeout(pollTimer);
+  if (S.demo) return;
+  let delay = 2500;
+  try {
+    const tok = await accessToken();
+    const t0 = performance.now();
+    const r = await fetch("https://api.spotify.com/v1/me/player/currently-playing?additional_types=episode",
+      { headers: { Authorization: "Bearer " + tok } });
+    const tMid = (t0 + performance.now()) / 2;
+    if (r.status === 401) { const t = store.get("tok", {}); t.exp = 0; store.set("tok", t); delay = 300; }
+    else if (r.status === 429) { delay = (parseInt(r.headers.get("Retry-After"), 10) || 10) * 1000; }
+    else if (r.status === 403) { S.track = null; showMsg("Accesso non autorizzato", "Aggiungi la tua email Spotify in “User Management” nella dashboard sviluppatori."); delay = 15000; }
+    else if (r.status === 204) { setNothing(); delay = 4000; }
+    else if (r.ok) { delay = onState(await r.json(), tMid); }
+    else delay = 5000;
+  } catch (e) {
+    if (e.message === "nologin" || e.message === "invalid_grant") { store.del("tok"); return toSetup("Sessione scaduta: accedi di nuovo."); }
+    delay = 5000;
+  }
+  if (document.hidden) delay = Math.max(delay, 10000);
+  pollTimer = setTimeout(poll, delay);
+}
+function onState(j, tMid) {
+  const it = j && j.item;
+  if (!it) { setNothing(); return 4000; }
+  const tr = { id: it.id || it.uri || it.name, name: it.name || "", type: it.type || j.currently_playing_type,
+    artist: (it.artists && it.artists[0] && it.artists[0].name) || (it.show && it.show.name) || "",
+    album: (it.album && it.album.name) || "", dur: it.duration_ms || 0 };
+  S.basePos = j.progress_ms || 0; S.baseT = tMid; S.playing = !!j.is_playing;
+  if (!S.track || S.track.id !== tr.id) { S.track = tr; newTrack(); }
+  let d = S.playing ? 2500 : 4000;
+  const left = tr.dur - S.basePos;
+  if (S.playing && left > 0 && left < d) d = left + 400; // cambio brano rilevato subito
+  return d;
+}
+function setNothing() {
+  if (S.track === null && !$("#msg").classList.contains("hidden")) return;
+  S.track = null; $("#trk").textContent = ""; setSrc("");
+  showMsg("Nessun brano in riproduzione", "Avvia un brano su Spotify: il testo apparirà qui.");
+}
+
+/* ================= Testi (LRCLIB) ================= */
+const cache = new Map();
+function cleanTitle(s) {
+  return s.replace(/\s*[-–—]\s*(\d{4}\s*)?(remaster(ed)?|live|radio edit|single version|mono|stereo|edit|version|mix|acoustic|from ).*$/i, "")
+          .replace(/\s*[\(\[](feat\.?|ft\.?|with)\s[^\)\]]*[\)\]]/ig, "").trim();
+}
+async function lrclib(path, params) {
+  const r = await fetch("https://lrclib.net/api/" + path + "?" + new URLSearchParams(params));
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error("lrclib " + r.status);
+  return r.json();
+}
+async function findLyrics(tr) {
+  if (cache.has(tr.id)) return cache.get(tr.id);
+  const d = Math.round(tr.dur / 1000);
+  let best = await lrclib("get", { track_name: tr.name, artist_name: tr.artist, album_name: tr.album, duration: d }).catch(() => null);
+  if (!best || (!best.syncedLyrics && !best.instrumental)) {
+    const arr = await lrclib("search", { track_name: cleanTitle(tr.name), artist_name: tr.artist }).catch(() => null) || [];
+    const near = arr.filter(x => Math.abs((x.duration || 0) - d) <= 4)
+                    .sort((a, b) => Math.abs(a.duration - d) - Math.abs(b.duration - d));
+    best = near.find(x => x.syncedLyrics) || (best && best.plainLyrics ? best : near.find(x => x.plainLyrics)) || best;
+  }
+  cache.set(tr.id, best);
+  return best;
+}
+function parseLRC(s) {
+  const out = [], tag = /^\s*\[(\d+):(\d+(?:[.:]\d+)?)\]/;
+  for (const raw of s.split(/\r?\n/)) {
+    let rest = raw, m; const times = [];
+    while ((m = tag.exec(rest))) { times.push(+m[1] * 60000 + parseFloat(m[2].replace(":", ".")) * 1000); rest = rest.slice(m[0].length); }
+    if (!times.length) continue;
+    const text = rest.replace(/<\d+:\d+(?:[.:]\d+)?>/g, "").replace(/\s+/g, " ").trim();
+    for (const t of times) out.push({ t, text });
+  }
+  return out.sort((a, b) => a.t - b.t);
+}
+async function newTrack() {
+  const tr = S.track;
+  $("#trk").innerHTML = "<b>" + esc(tr.name) + "</b> <span>· " + esc(tr.artist) + "</span>";
+  setSrc("");
+  if (tr.type === "episode") return showMsg(tr.name, "Podcast: nessun testo");
+  showMsg("♪", "Cerco il testo…");
+  let res = null;
+  try { res = await findLyrics(tr); } catch (e) {}
+  if (!S.track || S.track.id !== tr.id) return; // nel frattempo è cambiato brano
+  if (res && res.instrumental) return showMsg("♪", "Brano strumentale");
+  if (res && res.syncedLyrics) {
+    const L = parseLRC(res.syncedLyrics);
+    if (L.length) { setSrc("LRCLIB · sincronizzato"); return showLines(L); }
+  }
+  if (res && res.plainLyrics) { setSrc("LRCLIB · non sincronizzato"); return showPlain(res.plainLyrics); }
+  showMsg(tr.name, "Testo sincronizzato non trovato");
+}
+
+/* ================= Visualizzazione ================= */
+function setMode(m) {
+  $("#stage").style.visibility = m === "lines" ? "visible" : "hidden";
+  $("#msg").classList.toggle("hidden", m !== "msg");
+  $("#plain").classList.toggle("hidden", m !== "plain");
+}
+function showMsg(a, b) { S.lines = null; S.words = null; $("#msg .big").textContent = a; $("#msg .small").textContent = b || ""; setMode("msg"); }
+function showPlain(t) { S.lines = null; S.words = null; const p = $("#plain"); p.textContent = t; p.scrollTop = 0; setMode("plain"); }
+function showLines(L) { S.lines = L; S.idx = -2; setMode("lines"); }
+function setSrc(s) { $("#src").textContent = s; }
+
+function lineText(i) { return (!S.lines || i < 0 || i >= S.lines.length) ? "" : (S.lines[i].text || "♪"); }
+function setLine(sel, t) { $(sel).firstElementChild.textContent = t; }
+function curIndex(p) {
+  const L = S.lines; let lo = 0, hi = L.length - 1, ans = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (L[m].t <= p) { ans = m; lo = m + 1; } else hi = m - 1; }
+  return ans;
+}
+function renderLines(i) {
+  setLine("#prev", lineText(i - 1));
+  const cur = $("#cur"), txt = cur.firstElementChild;
+  const t = i < 0 ? "♪" : lineText(i);
+  txt.innerHTML = t.split(/(\s+)/).map(w => /^\s*$/.test(w) ? w : '<span class="w">' + esc(w) + "</span>").join("");
+  cur.classList.remove("fade"); void cur.offsetWidth; cur.classList.add("fade");
+  setLine("#next", lineText(i + 1));
+  // parole: avanzamento stimato in base alla lunghezza
+  const els = [...txt.querySelectorAll(".w")], lens = els.map(e => e.textContent.length);
+  const tot = lens.reduce((a, b) => a + b, 0) || 1; let c = 0;
+  S.words = i < 0 ? null : els.map((e, k) => { const s = c / tot; c += lens[k]; return { e, s, on: false }; });
+  if (i >= 0) {
+    const t0 = S.lines[i].t, t1 = i + 1 < S.lines.length ? S.lines[i + 1].t : t0 + 5000;
+    S.sing = Math.min(Math.max(300, t1 - t0) * 0.92, Math.max(1200, tot * 110));
+  }
+  fitAll();
+}
+function updateWords(p, i) {
+  if (!S.words) return;
+  const f = (p - S.lines[i].t) / S.sing;
+  for (const w of S.words) { const on = f >= 1 || f > w.s; if (on !== w.on) { w.on = on; w.e.classList.toggle("on", on); } }
+}
+function frame() {
+  if (S.lines) {
+    const p = pos(), i = curIndex(p);
+    if (i !== S.idx) { S.idx = i; renderLines(i); }
+    if (i >= 0) updateWords(p, i);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* Testo il più grande possibile: ricerca binaria della dimensione che riempie il riquadro */
+function fitBox(box) {
+  const inner = box.firstElementChild, W = box.clientWidth, H = box.clientHeight;
+  if (!inner || !W || !H || !inner.textContent.trim()) return;
+  let lo = 8, hi = Math.max(9, Math.floor(H));
+  while (hi - lo > 1) {
+    const m = (lo + hi) >> 1; inner.style.fontSize = m + "px";
+    if (inner.scrollWidth <= W + 0.5 && inner.offsetHeight <= H) lo = m; else hi = m;
+  }
+  inner.style.fontSize = lo + "px";
+}
+function fitAll() { ["#prev", "#cur", "#next"].forEach(s => fitBox($(s))); }
+
+/* ================= Comandi ================= */
+let hudTimer = null;
+function showHud() { $("#hud").classList.remove("off"); clearTimeout(hudTimer); hudTimer = setTimeout(() => $("#hud").classList.add("off"), 3500); }
+function setOff() { const v = S.offset / 1000; $("#off").textContent = (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2).replace(".", ",") + " s"; store.set("off", S.offset); }
+let wl = null;
+async function wake() { try { if ("wakeLock" in navigator && !document.hidden && (!wl || wl.released)) wl = await navigator.wakeLock.request("screen"); } catch (e) {} }
+
+function toSetup(err) {
+  clearTimeout(pollTimer); S.demo = false; S.lines = null;
+  $("#app").classList.add("hidden"); $("#setup").classList.remove("hidden");
+  $("#setupErr").textContent = err || "";
+}
+function toApp() {
+  $("#setup").classList.add("hidden"); $("#app").classList.remove("hidden");
+  document.body.classList.toggle("nonext", !store.get("next", true));
+  setOff(); showHud(); wake();
+  if (!S.demo) { showMsg("♪", "Collegamento a Spotify…"); poll(); }
+}
+function startDemo() {
+  S.demo = true; toApp();
+  const lrc = ["[00:01.00]Questa è una demo del karaoke", "[00:04.50]le parole si accendono piano piano",
+    "[00:08.00]", "[00:10.00]gira il telefono in orizzontale", "[00:13.50]e il testo si ingrandisce da solo",
+    "[00:17.00]righe corte", "[00:19.00]GRANDI!", "[00:21.00]una riga molto più lunga del solito per vedere come va a capo senza tagliare nessuna parola",
+    "[00:27.00]fine della demo"].join("\n");
+  S.track = { id: "demo", name: "Demo", artist: "Karaoke" };
+  $("#trk").innerHTML = "<b>Demo</b> <span>· nessun accesso a Spotify</span>"; setSrc("demo");
+  showLines(parseLRC(lrc)); S.basePos = 0; S.baseT = performance.now(); S.playing = true;
+  clearInterval(S.demoLoop);
+  S.demoLoop = setInterval(() => { if (!S.demo) return clearInterval(S.demoLoop); if (pos() > 30000) { S.basePos = 0; S.baseT = performance.now(); } }, 500);
+}
+
+$("#login").onclick = login;
+$("#demo").onclick = startDemo;
+$("#copyRedir").onclick = e => {
+  const b = e.currentTarget;
+  (navigator.clipboard ? navigator.clipboard.writeText(REDIRECT) : Promise.reject())
+    .then(() => { b.textContent = "Copiato ✓"; }, () => { const r = document.createRange(); r.selectNodeContents($("#redir")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+};
+$("#plus").onclick = () => { S.offset += 250; setOff(); showHud(); };
+$("#minus").onclick = () => { S.offset -= 250; setOff(); showHud(); };
+$("#toggleNext").onclick = () => { const on = document.body.classList.toggle("nonext"); store.set("next", !on); requestAnimationFrame(fitAll); showHud(); };
+$("#fs").onclick = () => {
+  const d = document, el = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (p && p.catch) p.catch(() => {}); }
+  } catch (e) {}
+  showHud();
+};
+$("#logout").onclick = () => { store.del("tok"); toSetup(""); };
+["#stage", "#msg", "#plain"].forEach(s => $(s).addEventListener("click", () => { showHud(); wake(); }));
+new ResizeObserver(() => fitAll()).observe($("#stage"));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { wake(); if (!$("#app").classList.contains("hidden")) poll(); } });
+
+(async function start() {
+  $("#redir").textContent = REDIRECT;
+  $("#cid").value = store.get("cid", "");
+  if (location.protocol === "file:" || !window.isSecureContext)
+    $("#warn").textContent = "Attenzione: per accedere la pagina va aperta da un indirizzo https:// (o http://127.0.0.1).";
+  requestAnimationFrame(frame);
+  try { await handleRedirect(); } catch (e) { return toSetup(e.message); }
+  if (store.get("tok", null)) toApp(); else toSetup("");
+})();
+</script>
+</body>
+</html>
