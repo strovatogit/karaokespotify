@@ -1,0 +1,19 @@
+{
+  "name": "Karaoke Spotify",
+  "short_name": "Karaoke",
+  "description": "Testi sincronizzati con traduzione in italiano per i brani in ascolto su Spotify",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#08090c",
+  "theme_color": "#08090c",
+  "lang": "it",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

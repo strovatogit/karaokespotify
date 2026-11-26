@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Karaoke Spotify</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root{
   --bg:#08090c; --fg:#ffffff; --muted:rgba(255,255,255,.45); --faint:rgba(255,255,255,.28);
@@ -157,6 +160,7 @@ body.sheet #sheet{transform:translate(-50%,0)}
   <div class="row">
     <button class="btn primary" id="login">Accedi con Spotify</button>
     <button class="btn" id="demo">Prova la demo</button>
+    <button class="btn install hidden">Installa l'app</button>
   </div>
   <p class="err" id="setupErr"></p>
   <p class="err" id="warn"></p>
@@ -209,7 +213,7 @@ body.sheet #sheet{transform:translate(-50%,0)}
       <div class="step"><button class="txtb" id="minus">Ritarda</button><span class="v" id="off">0,00 s</span><button class="txtb" id="plus">Anticipa</button></div></div>
     <div class="set"><div class="l">Traduzione in italiano</div><button class="sw" id="swTr" aria-label="Traduzione"></button></div>
     <div class="set"><div class="l">Mostra riga successiva</div><button class="sw" id="swNext" aria-label="Riga successiva"></button></div>
-    <div class="sheetbtns"><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
+    <div class="sheetbtns"><button class="btn install hidden">Installa l'app</button><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
     <div id="src"></div>
   </div>
 </section>
@@ -728,6 +732,25 @@ document.addEventListener("keydown", e => {
 });
 new ResizeObserver(() => fitAll()).observe($("#stage"));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { wake(); if (!$("#app").classList.contains("hidden")) poll(); } });
+
+/* ---- PWA: installazione a schermo intero ---- */
+const standalone = matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: standalone)").matches;
+if (standalone) $("#fs").classList.add("hidden");
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); installEvt = e;
+  document.querySelectorAll(".install").forEach(b => b.classList.remove("hidden"));
+});
+window.addEventListener("appinstalled", () => {
+  installEvt = null; document.querySelectorAll(".install").forEach(b => b.classList.add("hidden"));
+  toast("App installata: la trovi nella schermata Home.");
+});
+document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
+  if (!installEvt) return;
+  installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
+  installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
+});
+if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
 
 (async function start() {
   $("#redir").textContent = REDIRECT;
