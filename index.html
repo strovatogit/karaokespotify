@@ -3,49 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#08090c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Karaoke Spotify</title>
 <style>
-:root{--bg:#000;--fg:#fff;--dim:rgba(255,255,255,.4);--acc:#1ed760;--sung:#1ed760}
+:root{
+  --bg:#08090c; --fg:#ffffff; --muted:rgba(255,255,255,.45); --faint:rgba(255,255,255,.28);
+  --acc:#1ed760; --acc2:#7cf0a5; --panel:#15171c; --line:rgba(255,255,255,.1);
+  --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
+  --sal:env(safe-area-inset-left); --sar:env(safe-area-inset-right);
+}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
-button{font:inherit;font-size:15px;color:inherit;background:rgba(255,255,255,.14);border:0;border-radius:999px;padding:.6em 1em;cursor:pointer;white-space:nowrap}
-button:active{background:rgba(255,255,255,.28)}
-button.primary{background:var(--acc);color:#000;font-weight:700}
+html,body{margin:0;height:100%;color:var(--fg);overflow:hidden;-webkit-tap-highlight-color:transparent;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(120% 70% at 50% -10%,#10301f 0%,rgba(16,48,31,0) 60%),var(--bg)}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:none;-webkit-user-select:none;user-select:none}
 a{color:var(--acc)}
 .hidden{display:none!important}
+svg{display:block}
 
-/* ---------- configurazione ---------- */
-#setup{position:fixed;inset:0;overflow:auto;padding:max(24px,env(safe-area-inset-top)) 20px 40px;display:flex;justify-content:center}
+/* ---------- configurazione iniziale ---------- */
+#setup{position:fixed;inset:0;overflow:auto;padding:calc(24px + var(--sat)) 20px 40px;display:flex;justify-content:center}
 #setup .card{max-width:560px;width:100%}
 #setup h1{font-size:28px;margin:8px 0 4px}
 #setup p,#setup li{color:#cfcfcf;line-height:1.5;font-size:15px}
 #setup ol{padding-left:22px}
 #setup label{display:block;margin:18px 0 6px;font-weight:600}
-#setup input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #333;background:#111;color:#fff;font:inherit;font-size:16px}
-.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;word-break:break-all;background:#111;border:1px solid #333;border-radius:10px;padding:10px 12px;color:#ddd}
+#setup input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #2a2d35;background:#111317;color:#fff;font:inherit;font-size:16px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;word-break:break-all;background:#111317;border:1px solid #2a2d35;border-radius:12px;padding:10px 12px;color:#ddd}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
-.err{color:#ff6b6b;min-height:1.2em}
+.btn{background:rgba(255,255,255,.1);border-radius:999px;padding:.65em 1.1em;font-size:15px;white-space:nowrap}
+.btn:active{background:rgba(255,255,255,.22)}
+.btn.primary{background:var(--acc);color:#000;font-weight:700}
+.err{color:#ff7b7b;min-height:1.2em}
 
-/* ---------- karaoke ---------- */
+/* ---------- testo ---------- */
 #app{position:fixed;inset:0}
-#stage{position:absolute;inset:0;display:grid;gap:1.2vmin;
-  padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+#stage{position:absolute;inset:0;display:grid;gap:1.2vmin;touch-action:pan-y;
+  padding:calc(8px + var(--sat)) calc(14px + var(--sar)) calc(12px + var(--sab)) calc(14px + var(--sal));
   grid-template-rows:11fr 65fr 24fr}
 .box{position:relative;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.txt{display:block;width:100%;text-align:center;font-weight:800;line-height:1.1;letter-spacing:-.01em;text-wrap:balance;overflow-wrap:normal;word-break:normal}
-#prev .txt,#next .txt{color:var(--dim);font-weight:700}
+.txt{display:block;width:100%;text-align:center;font-weight:800;line-height:1.1;letter-spacing:-.015em;text-wrap:balance;overflow-wrap:normal;word-break:normal}
+#prev .txt,#next .txt{color:var(--faint);font-weight:700}
 #cur .w{color:var(--fg);transition:color .12s linear}
-#cur .w.on{color:var(--sung)}
-#cur.fade .txt{animation:enter .22s ease-out}
-.tr{display:block;font-size:.52em;font-weight:600;color:rgba(255,255,255,.62);margin-top:.3em;line-height:1.15;font-style:italic}
+#cur .w.on{color:var(--acc);text-shadow:0 0 .35em rgba(30,215,96,.35)}
+#cur.fade .txt{animation:enter .25s ease-out}
+@keyframes enter{from{opacity:0;transform:translateY(6%)}to{opacity:1;transform:none}}
+.tr{display:block;font-size:.5em;font-weight:500;font-style:italic;color:rgba(255,255,255,.6);margin-top:.35em;line-height:1.18;letter-spacing:0}
+#prev .tr,#next .tr{display:none}
 body.notr .tr{display:none}
-#plain .pl{margin:0 0 .7em}
-#plain .tr{font-size:.6em;margin-top:.15em}
-@keyframes enter{from{opacity:0;transform:translateY(5%)}to{opacity:1;transform:none}}
 body.nonext #next{display:none}
 body.nonext #stage{grid-template-rows:11fr 89fr}
 @media (orientation:landscape){
@@ -53,40 +61,93 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
   #prev{display:none}
   body.nonext #stage{grid-template-rows:1fr}
 }
-#plain{position:absolute;inset:0;overflow:auto;padding:14vmin 6vw 22vmin;font-size:calc(var(--ps,1) * clamp(22px,6.5vmin,64px));font-weight:700;line-height:1.3;text-align:center;white-space:pre-wrap}
+#plain{position:absolute;inset:0;overflow:auto;padding:calc(64px + var(--sat)) 6vw calc(150px + var(--sab));
+  font-size:calc(var(--ps,1) * clamp(22px,6.5vmin,64px));font-weight:700;line-height:1.3;text-align:center}
+#plain .pl{margin:0 0 .6em}
+#plain .tr{font-size:.6em;margin-top:.15em}
 #msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8vmin;gap:2vmin}
 #msg .big{font-size:clamp(26px,8vmin,80px);font-weight:800}
-#msg .small{font-size:clamp(15px,3.4vmin,30px);color:var(--dim)}
+#msg .small{font-size:clamp(15px,3.4vmin,30px);color:var(--muted)}
 
-/* ---------- comandi (si nascondono da soli) ---------- */
-#hud{position:absolute;inset:0;pointer-events:none;transition:opacity .35s}
+/* barra di avanzamento sempre visibile */
+#mini{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.08);pointer-events:none}
+#mini i{display:block;height:100%;width:0;background:var(--acc)}
+
+/* ---------- comandi a scomparsa ---------- */
+#hud{position:absolute;inset:0;pointer-events:none;transition:opacity .3s}
 #hud.off{opacity:0}
-#hud .top,#hud .bot{position:absolute;left:0;right:0;display:flex;align-items:center;gap:8px;pointer-events:auto;
-  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 14px max(12px,env(safe-area-inset-left))}
-#hud .top{top:0;background:linear-gradient(#000e,#0000)}
-#hud .bot{bottom:0;padding-top:14px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:linear-gradient(#0000,#000e);justify-content:center;flex-wrap:wrap}
+#hud .top,#hud .bot{position:absolute;left:0;right:0;pointer-events:auto}
 #hud.off .top,#hud.off .bot{pointer-events:none}
-#trk{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#trk span{color:#aaa}
-#src{font-size:12px;color:#888;white-space:nowrap}
-#off,#size{min-width:4.2em;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
-#size{min-width:3em}
-.grp{display:flex;align-items:center;gap:6px}
-button.big{font-weight:800;min-width:2.8em}
-button.on{background:rgba(30,215,96,.3)}
+#hud .top{top:0;display:flex;align-items:center;gap:12px;
+  padding:calc(10px + var(--sat)) calc(12px + var(--sar)) 28px calc(16px + var(--sal));
+  background:linear-gradient(rgba(8,9,12,.95) 40%,rgba(8,9,12,0))}
+#trk{flex:1;min-width:0;line-height:1.25}
+#trk .t{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#trk .a{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hud .bot{bottom:0;padding:34px calc(18px + var(--sar)) calc(14px + var(--sab)) calc(18px + var(--sal));
+  background:linear-gradient(rgba(8,9,12,0),rgba(8,9,12,.95) 45%)}
+.prog{display:flex;align-items:center;gap:10px;max-width:640px;margin:0 auto 10px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#bar{flex:1;height:22px;display:flex;align-items:center;cursor:pointer;touch-action:none}
+#bar .rail{position:relative;width:100%;height:4px;border-radius:4px;background:rgba(255,255,255,.18)}
+#bar .fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:4px;background:var(--fg)}
+#bar .knob{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--fg);left:0}
+.transport{display:flex;align-items:center;justify-content:center;gap:clamp(18px,7vw,44px)}
+.ib{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--fg)}
+.ib:active{background:rgba(255,255,255,.14)}
+.ib.dis{opacity:.3;pointer-events:none}
+.tb{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted)}
+#play{width:64px;height:64px;border-radius:50%;background:var(--fg);color:#000;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#play:active{transform:scale(.95)}
+@media (orientation:landscape) and (max-height:500px){
+  #hud .bot{padding-top:24px}
+  .prog{margin-bottom:4px}
+  #play{width:52px;height:52px}
+}
+
+/* ---------- avvisi ---------- */
+#toast{position:absolute;left:50%;bottom:calc(150px + var(--sab));transform:translateX(-50%);max-width:min(92vw,520px);
+  background:#22252c;border:1px solid var(--line);color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.4;
+  display:flex;gap:12px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:30}
+#toast button{color:var(--acc);font-weight:700;white-space:nowrap}
+
+/* ---------- pannello impostazioni ---------- */
+#sheetBg{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:20;opacity:0;pointer-events:none;transition:opacity .25s}
+#sheet{position:absolute;left:50%;bottom:0;width:min(100%,520px);transform:translate(-50%,105%);z-index:21;
+  background:var(--panel);border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;
+  padding:10px 18px calc(18px + var(--sab));transition:transform .28s cubic-bezier(.2,.8,.2,1);max-height:92vh;overflow:auto}
+body.sheet #sheetBg{opacity:1;pointer-events:auto}
+body.sheet #sheet{transform:translate(-50%,0)}
+#sheet .grab{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 10px}
+#sheet h2{font-size:17px;margin:4px 0 6px}
+.set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+.set .l{font-size:15px}
+.set .l small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);font-size:20px;font-weight:700}
+.step button:active{background:rgba(255,255,255,.22)}
+.step button.txtb{width:auto;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600}
+.step .v{min-width:4.2em;text-align:center;font-variant-numeric:tabular-nums;font-size:14px}
+.sw{position:relative;width:50px;height:30px;border-radius:15px;background:rgba(255,255,255,.18);transition:background .2s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw.on{background:var(--acc)}
+.sw.on::after{transform:translateX(20px)}
+.sheetbtns{display:flex;gap:10px;margin-top:12px}
+.sheetbtns .btn{flex:1;text-align:center}
+#src{color:var(--muted);font-size:12px;margin-top:12px;text-align:center}
 </style>
 </head>
 <body>
 
+<!-- ======= Configurazione ======= -->
 <section id="setup" class="hidden"><div class="card">
   <h1>🎤 Karaoke per Spotify</h1>
-  <p>Mostra il testo sincronizzato del brano che stai ascoltando su Spotify (telefono, PC o casse). Testi da LRCLIB.</p>
+  <p>Mostra il testo sincronizzato del brano che stai ascoltando su Spotify (telefono, PC o casse), con la traduzione in italiano. Testi da LRCLIB.</p>
   <ol>
     <li>Apri <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> e crea un'app, spuntando <i>Web API</i>.</li>
     <li>In <i>Redirect URIs</i> aggiungi esattamente questo indirizzo:</li>
   </ol>
   <div class="mono" id="redir"></div>
-  <div class="row"><button id="copyRedir">Copia indirizzo</button></div>
+  <div class="row"><button class="btn" id="copyRedir">Copia indirizzo</button></div>
   <ol start="3">
     <li>In <i>User Management</i> aggiungi nome ed email Spotify dei familiari che la useranno (massimo 5).</li>
     <li>Incolla qui sotto il <i>Client ID</i> dell'app.</li>
@@ -94,13 +155,14 @@ button.on{background:rgba(30,215,96,.3)}
   <label for="cid">Client ID</label>
   <input id="cid" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="es. 1a2b3c4d…">
   <div class="row">
-    <button class="primary" id="login">Accedi con Spotify</button>
-    <button id="demo">Prova la demo</button>
+    <button class="btn primary" id="login">Accedi con Spotify</button>
+    <button class="btn" id="demo">Prova la demo</button>
   </div>
   <p class="err" id="setupErr"></p>
   <p class="err" id="warn"></p>
 </div></section>
 
+<!-- ======= Karaoke ======= -->
 <section id="app" class="hidden">
   <div id="stage">
     <div class="box" id="prev"><span class="txt"></span></div>
@@ -109,16 +171,46 @@ button.on{background:rgba(30,215,96,.3)}
   </div>
   <div id="plain" class="hidden"></div>
   <div id="msg" class="hidden"><div class="big"></div><div class="small"></div></div>
+  <div id="mini"><i></i></div>
+
   <div id="hud">
-    <div class="top"><div id="trk"></div><span id="src"></span></div>
-    <div class="bot">
-      <div class="grp"><button id="smaller" class="big" title="Testo più piccolo">−</button><span id="size">Max</span><button id="bigger" class="big" title="Testo più grande">+</button></div>
-      <div class="grp"><button id="minus" title="Il testo arriva troppo presto">Ritarda</button><span id="off">0,00 s</span><button id="plus" title="Il testo arriva troppo tardi">Anticipa</button></div>
-      <button id="toggleTr">Traduzione</button>
-      <button id="toggleNext">Riga succ.</button>
-      <button id="fs">Schermo intero</button>
-      <button id="logout">Esci</button>
+    <div class="top">
+      <div id="trk"><div class="t"></div><div class="a"></div></div>
+      <button class="ib" id="openSheet" aria-label="Impostazioni">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      </button>
     </div>
+    <div class="bot">
+      <div class="prog"><span id="tNow">0:00</span>
+        <div id="bar"><div class="rail"><div class="fill"></div><div class="knob"></div></div></div>
+        <span id="tDur">0:00</span></div>
+      <div class="transport">
+        <div class="tb"><button class="ib" id="prevSt" aria-label="Strofa precedente">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5.5v13L9.5 12z"/></svg></button>strofa</div>
+        <button id="play" aria-label="Pausa / riproduci">
+          <svg id="icPause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+          <svg id="icPlay" class="hidden" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15L19.5 12z"/></svg>
+        </button>
+        <div class="tb"><button class="ib" id="nextSt" aria-label="Strofa successiva">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5.5v13L14.5 12z"/></svg></button>strofa</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden"><span></span><button></button></div>
+
+  <div id="sheetBg"></div>
+  <div id="sheet" role="dialog" aria-label="Impostazioni">
+    <div class="grab"></div>
+    <h2>Impostazioni</h2>
+    <div class="set"><div class="l">Grandezza testo<small>Max = riempie lo schermo</small></div>
+      <div class="step"><button id="smaller" aria-label="Più piccolo">−</button><span class="v" id="size">Max</span><button id="bigger" aria-label="Più grande">+</button></div></div>
+    <div class="set"><div class="l">Sincronia<small>Se il testo arriva presto o tardi</small></div>
+      <div class="step"><button class="txtb" id="minus">Ritarda</button><span class="v" id="off">0,00 s</span><button class="txtb" id="plus">Anticipa</button></div></div>
+    <div class="set"><div class="l">Traduzione in italiano</div><button class="sw" id="swTr" aria-label="Traduzione"></button></div>
+    <div class="set"><div class="l">Mostra riga successiva</div><button class="sw" id="swNext" aria-label="Riga successiva"></button></div>
+    <div class="sheetbtns"><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
+    <div id="src"></div>
   </div>
 </section>
 
@@ -132,7 +224,8 @@ const store = {
   del(k) { try { localStorage.removeItem("kk_" + k); } catch (e) {} }
 };
 const REDIRECT = location.origin + location.pathname;
-const SCOPES = "user-read-currently-playing user-read-playback-state";
+const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state";
+const fmt = ms => { ms = Math.max(0, ms || 0); const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 /* ================= OAuth PKCE ================= */
 function rnd(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, b => b.toString(16).padStart(2, "0")).join(""); }
@@ -141,7 +234,7 @@ async function challenge(v) {
   return btoa(String.fromCharCode(...new Uint8Array(d))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 async function login() {
-  const cid = $("#cid").value.trim();
+  const cid = ($("#cid").value || store.get("cid", "")).trim();
   if (!cid) { $("#setupErr").textContent = "Inserisci il Client ID."; return; }
   if (!window.isSecureContext || !crypto.subtle) { $("#setupErr").textContent = "Serve un indirizzo https:// (o http://127.0.0.1)."; return; }
   store.set("cid", cid);
@@ -157,7 +250,8 @@ async function tokenReq(params) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error === "invalid_grant" ? "invalid_grant" : (j.error_description || j.error || "HTTP " + r.status));
   const old = store.get("tok", {}) || {};
-  const tok = { access: j.access_token, refresh: j.refresh_token || old.refresh, exp: Date.now() + (j.expires_in - 60) * 1000 };
+  const tok = { access: j.access_token, refresh: j.refresh_token || old.refresh, scope: j.scope || old.scope || "",
+    exp: Date.now() + (j.expires_in - 60) * 1000 };
   store.set("tok", tok);
   return tok;
 }
@@ -180,12 +274,15 @@ async function accessToken() {
     .finally(() => { refreshing = null; });
   return (await refreshing).access;
 }
+const canControl = () => { const t = store.get("tok", {}) || {}; return (t.scope || "").includes("user-modify-playback-state"); };
 
 /* ================= Stato ================= */
-const S = { track: null, lines: null, words: null, sing: 1500, idx: -2,
+const S = { track: null, lines: null, words: null, sing: 1500, idx: -2, stanzas: [],
   basePos: 0, baseT: 0, playing: false, offset: store.get("off", 0), demo: false,
-  size: store.get("size", 10), trans: null, plain: null };
-const pos = () => S.basePos + (S.playing ? performance.now() - S.baseT : 0) + S.offset;
+  size: store.get("size", 10), trans: null, plain: null, holdUntil: 0 };
+const rawPos = () => S.basePos + (S.playing ? performance.now() - S.baseT : 0);
+const pos = () => rawPos() + S.offset;
+function setPlayhead(ms, playing) { S.basePos = ms; S.baseT = performance.now(); if (playing !== undefined) S.playing = playing; S.idx = -2; }
 
 /* ================= Spotify: brano in corso ================= */
 let pollTimer = null;
@@ -216,10 +313,16 @@ function onState(j, tMid) {
   const it = j && j.item;
   if (!it) { setNothing(); return 4000; }
   const tr = { id: it.id || it.uri || it.name, name: it.name || "", type: it.type || j.currently_playing_type,
-    artist: (it.artists && it.artists[0] && it.artists[0].name) || (it.show && it.show.name) || "",
+    artist: (it.artists || []).map(a => a.name).join(", ") || (it.show && it.show.name) || "",
+    artist1: (it.artists && it.artists[0] && it.artists[0].name) || (it.show && it.show.name) || "",
     album: (it.album && it.album.name) || "", dur: it.duration_ms || 0 };
-  S.basePos = j.progress_ms || 0; S.baseT = tMid; S.playing = !!j.is_playing;
+  // subito dopo un nostro comando (salto/pausa) Spotify può rispondere con dati vecchi: li ignoriamo per un attimo
+  if (performance.now() > S.holdUntil || !S.track || S.track.id !== tr.id) {
+    S.basePos = j.progress_ms || 0; S.baseT = tMid; S.playing = !!j.is_playing;
+  }
   if (!S.track || S.track.id !== tr.id) { S.track = tr; newTrack(); }
+  S.track.dur = tr.dur;
+  updatePlayIcon();
   let d = S.playing ? 2500 : 4000;
   const left = tr.dur - S.basePos;
   if (S.playing && left > 0 && left < d) d = left + 400; // cambio brano rilevato subito
@@ -227,8 +330,84 @@ function onState(j, tMid) {
 }
 function setNothing() {
   if (S.track === null && !$("#msg").classList.contains("hidden")) return;
-  S.track = null; $("#trk").textContent = ""; setSrc("");
+  S.track = null; S.playing = false; setTrackInfo("", ""); setSrc(""); updatePlayIcon();
   showMsg("Nessun brano in riproduzione", "Avvia un brano su Spotify: il testo apparirà qui.");
+}
+
+/* ---- comandi di riproduzione ---- */
+async function player(method, path) {
+  if (S.demo) return true;
+  if (!canControl()) {
+    toast("Per usare pausa e salti serve un nuovo accesso a Spotify.", "Accedi", login);
+    return false;
+  }
+  try {
+    const tok = await accessToken();
+    const r = await fetch("https://api.spotify.com/v1/me/player/" + path, { method, headers: { Authorization: "Bearer " + tok } });
+    if (r.ok || r.status === 202 || r.status === 204) return true;
+    if (r.status === 404) toast("Nessun dispositivo attivo: apri Spotify e avvia un brano.");
+    else if (r.status === 403) toast("Spotify non permette questo comando adesso.");
+    else if (r.status === 401) { const t = store.get("tok", {}); t.exp = 0; store.set("tok", t); toast("Riprova tra un attimo."); }
+    else toast("Comando non riuscito (" + r.status + ").");
+  } catch (e) { toast("Connessione non riuscita."); }
+  return false;
+}
+async function togglePlay() {
+  if (!S.track) return;
+  const wasPlaying = S.playing, p = rawPos();
+  setPlayhead(p, !wasPlaying); updatePlayIcon(); S.holdUntil = performance.now() + 1500;
+  const ok = await player("PUT", wasPlaying ? "pause" : "play");
+  if (!ok) { setPlayhead(p, wasPlaying); updatePlayIcon(); }
+  setTimeout(poll, 1600);
+}
+async function seekTo(ms) {
+  if (!S.track) return;
+  ms = Math.max(0, Math.min(ms, (S.track.dur || ms + 1) - 500));
+  const before = rawPos();
+  setPlayhead(ms); S.holdUntil = performance.now() + 1500;
+  const ok = await player("PUT", "seek?position_ms=" + Math.round(ms));
+  if (!ok) setPlayhead(before);
+  setTimeout(poll, 1600);
+}
+function updatePlayIcon() {
+  $("#icPause").classList.toggle("hidden", !S.playing);
+  $("#icPlay").classList.toggle("hidden", S.playing);
+}
+
+/* ---- strofe ---- */
+function buildStanzas(L) {
+  const st = []; let gap = true;
+  L.forEach((l, i) => {
+    if (!l.text) { gap = true; return; }
+    if (gap) st.push(i);
+    gap = false;
+  });
+  if (st.length >= 3) return st;
+  // nessuna separazione nel testo: blocchi da 4 righe
+  const nonEmpty = L.map((l, i) => l.text ? i : -1).filter(i => i >= 0);
+  return nonEmpty.filter((_, k) => k % 4 === 0);
+}
+function jumpStanza(dir) {
+  if (!S.lines || !S.stanzas.length) return;
+  const st = S.stanzas, i = curIndex(pos());
+  let k = -1; for (let n = 0; n < st.length; n++) if (st[n] <= i) k = n;
+  let target;
+  if (dir > 0) target = k + 1 < st.length ? st[k + 1] : null;
+  else {
+    // come nei lettori musicali: se la strofa è iniziata da più di 2 s torna al suo inizio
+    if (k >= 0 && pos() - S.lines[st[k]].t > 2000) target = st[k];
+    else target = k - 1 >= 0 ? st[k - 1] : (k === 0 ? st[0] : null);
+  }
+  if (target === null) { if (dir > 0) toast("È l'ultima strofa."); return; }
+  seekTo(S.lines[target].t - S.offset + 30);
+  showHud();
+}
+function jumpLine(dir) {
+  if (!S.lines) return;
+  const i = curIndex(pos());
+  let t = i + dir; while (t >= 0 && t < S.lines.length && !S.lines[t].text) t += dir;
+  if (t < 0 || t >= S.lines.length) return;
+  seekTo(S.lines[t].t - S.offset + 30);
 }
 
 /* ================= Testi (LRCLIB) ================= */
@@ -246,9 +425,9 @@ async function lrclib(path, params) {
 async function findLyrics(tr) {
   if (cache.has(tr.id)) return cache.get(tr.id);
   const d = Math.round(tr.dur / 1000);
-  let best = await lrclib("get", { track_name: tr.name, artist_name: tr.artist, album_name: tr.album, duration: d }).catch(() => null);
+  let best = await lrclib("get", { track_name: tr.name, artist_name: tr.artist1, album_name: tr.album, duration: d }).catch(() => null);
   if (!best || (!best.syncedLyrics && !best.instrumental)) {
-    const arr = await lrclib("search", { track_name: cleanTitle(tr.name), artist_name: tr.artist }).catch(() => null) || [];
+    const arr = await lrclib("search", { track_name: cleanTitle(tr.name), artist_name: tr.artist1 }).catch(() => null) || [];
     const near = arr.filter(x => Math.abs((x.duration || 0) - d) <= 4)
                     .sort((a, b) => Math.abs(a.duration - d) - Math.abs(b.duration - d));
     best = near.find(x => x.syncedLyrics) || (best && best.plainLyrics ? best : near.find(x => x.plainLyrics)) || best;
@@ -267,8 +446,9 @@ function parseLRC(s) {
   }
   return out.sort((a, b) => a.t - b.t);
 }
+
 /* ================= Traduzione in italiano ================= */
-const trCache = new Map(); // id brano -> Map(testo originale -> traduzione) oppure "it"
+const trCache = new Map(); // id brano -> Map(testo -> traduzione) oppure "it"
 async function gtx(text) {
   const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=it&dt=t&q=" + encodeURIComponent(text));
   if (!r.ok) throw new Error("translate " + r.status);
@@ -277,7 +457,6 @@ async function gtx(text) {
 }
 async function translateAll(texts) {
   const map = new Map(); let lang = null;
-  // blocchi di righe separate da "a capo", per poche richieste
   const chunks = []; let cur = [];
   for (const t of texts) { if (cur.length && (cur.join("\n").length + t.length > 1200)) { chunks.push(cur); cur = []; } cur.push(t); }
   if (cur.length) chunks.push(cur);
@@ -290,6 +469,7 @@ async function translateAll(texts) {
   }
   return map;
 }
+let srcBase = "";
 async function ensureTranslation() {
   if (document.body.classList.contains("notr") || !S.track || S.demo) return;
   const id = S.track.id;
@@ -299,10 +479,11 @@ async function ensureTranslation() {
   if (!res) {
     const uniq = [...new Set(texts.map(t => t.trim()).filter(t => t && /\p{L}/u.test(t)))];
     try { res = await translateAll(uniq); trCache.set(id, res); }
-    catch (e) { if (S.track && S.track.id === id) setSrc($("#src").textContent.split(" · trad")[0] + " · traduzione non disponibile"); return; }
+    catch (e) { if (S.track && S.track.id === id) $("#src").textContent = srcBase + " · traduzione non disponibile"; return; }
   }
   if (!S.track || S.track.id !== id) return;
   S.trans = res === "it" ? null : res;
+  $("#src").textContent = srcBase + (res === "it" ? " · brano in italiano" : " · Traduzione: Google");
   if (S.lines) S.idx = -2; else if (S.plain) renderPlain();
 }
 function trOf(t) {
@@ -311,29 +492,34 @@ function trOf(t) {
   return x && x.toLowerCase() !== t.trim().toLowerCase() ? x : "";
 }
 
+/* ================= Cambio brano ================= */
 async function newTrack() {
   const tr = S.track;
-  $("#trk").innerHTML = "<b>" + esc(tr.name) + "</b> <span>· " + esc(tr.artist) + "</span>";
+  setTrackInfo(tr.name, tr.artist);
   setSrc(""); S.trans = null;
   if (tr.type === "episode") return showMsg(tr.name, "Podcast: nessun testo");
   showMsg("♪", "Cerco il testo…");
   let res = null;
   try { res = await findLyrics(tr); } catch (e) {}
-  if (!S.track || S.track.id !== tr.id) return; // nel frattempo è cambiato brano
+  if (!S.track || S.track.id !== tr.id) return;
   if (res && res.instrumental) return showMsg("♪", "Brano strumentale");
   if (res && res.syncedLyrics) {
     const L = parseLRC(res.syncedLyrics);
-    if (L.length) { setSrc("LRCLIB · sincronizzato"); showLines(L); return ensureTranslation(); }
+    if (L.length) { setSrc("Testi: LRCLIB (sincronizzati)"); showLines(L); return ensureTranslation(); }
   }
-  if (res && res.plainLyrics) { setSrc("LRCLIB · non sincronizzato"); showPlain(res.plainLyrics); return ensureTranslation(); }
+  if (res && res.plainLyrics) { setSrc("Testi: LRCLIB (non sincronizzati)"); showPlain(res.plainLyrics); return ensureTranslation(); }
   showMsg(tr.name, "Testo sincronizzato non trovato");
 }
 
 /* ================= Visualizzazione ================= */
+function setTrackInfo(t, a) { $("#trk .t").textContent = t; $("#trk .a").textContent = a; }
+function setSrc(s) { srcBase = s; $("#src").textContent = s; }
 function setMode(m) {
   $("#stage").style.visibility = m === "lines" ? "visible" : "hidden";
   $("#msg").classList.toggle("hidden", m !== "msg");
   $("#plain").classList.toggle("hidden", m !== "plain");
+  const nav = m === "lines";
+  $("#prevSt").classList.toggle("dis", !nav); $("#nextSt").classList.toggle("dis", !nav);
 }
 function showMsg(a, b) { S.lines = null; S.plain = null; S.words = null; $("#msg .big").textContent = a; $("#msg .small").textContent = b || ""; setMode("msg"); }
 function showPlain(t) { S.lines = null; S.words = null; S.plain = t; renderPlain(); $("#plain").scrollTop = 0; setMode("plain"); }
@@ -343,8 +529,7 @@ function renderPlain() {
     return '<div class="pl">' + (esc(l) || "&nbsp;") + (tr ? '<span class="tr">' + esc(tr) + "</span>" : "") + "</div>";
   }).join("");
 }
-function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; setMode("lines"); }
-function setSrc(s) { $("#src").textContent = s; }
+function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; S.stanzas = buildStanzas(L); setMode("lines"); }
 
 function lineText(i) { return (!S.lines || i < 0 || i >= S.lines.length) ? "" : (S.lines[i].text || "♪"); }
 function setLine(sel, t) { $(sel).firstElementChild.textContent = t; }
@@ -362,7 +547,6 @@ function renderLines(i) {
     + (tr ? '<span class="tr">' + esc(tr) + "</span>" : "");
   cur.classList.remove("fade"); void cur.offsetWidth; cur.classList.add("fade");
   setLine("#next", lineText(i + 1));
-  // parole: avanzamento stimato in base alla lunghezza
   const els = [...txt.querySelectorAll(".w")], lens = els.map(e => e.textContent.length);
   const tot = lens.reduce((a, b) => a + b, 0) || 1; let c = 0;
   S.words = i < 0 ? null : els.map((e, k) => { const s = c / tot; c += lens[k]; return { e, s, on: false }; });
@@ -377,11 +561,19 @@ function updateWords(p, i) {
   const f = (p - S.lines[i].t) / S.sing;
   for (const w of S.words) { const on = f >= 1 || f > w.s; if (on !== w.on) { w.on = on; w.e.classList.toggle("on", on); } }
 }
+let dragging = false;
 function frame() {
   if (S.lines) {
     const p = pos(), i = curIndex(p);
     if (i !== S.idx) { S.idx = i; renderLines(i); }
     if (i >= 0) updateWords(p, i);
+  }
+  const dur = S.track && S.track.dur, rp = Math.min(rawPos(), dur || 0);
+  const f = dur ? Math.max(0, Math.min(1, rp / dur)) : 0;
+  $("#mini i").style.width = (f * 100) + "%";
+  if (!dragging) {
+    $("#bar .fill").style.width = (f * 100) + "%"; $("#bar .knob").style.left = (f * 100) + "%";
+    $("#tNow").textContent = fmt(rp); $("#tDur").textContent = fmt(dur);
   }
   requestAnimationFrame(frame);
 }
@@ -398,12 +590,7 @@ function fitBox(box) {
   inner.style.fontSize = lo + "px";
 }
 function fitAll() { ["#prev", "#cur", "#next"].forEach(s => fitBox($(s))); }
-
-/* Grandezza: livelli 1–9 = tetto fisso (righe tutte uguali), 10 = Max (riempie lo spazio) */
-function sizeCap() {
-  if (S.size >= 10) return Infinity;
-  return Math.min(innerWidth, innerHeight) * (0.035 + 0.03 * S.size);
-}
+function sizeCap() { return S.size >= 10 ? Infinity : Math.min(innerWidth, innerHeight) * (0.035 + 0.03 * S.size); }
 function setSize(n) {
   S.size = Math.max(1, Math.min(10, n)); store.set("size", S.size);
   $("#size").textContent = S.size >= 10 ? "Max" : S.size + "/10";
@@ -411,43 +598,67 @@ function setSize(n) {
   fitAll();
 }
 
-/* ================= Comandi ================= */
+/* ================= Interfaccia ================= */
 let hudTimer = null;
-function showHud() { $("#hud").classList.remove("off"); clearTimeout(hudTimer); hudTimer = setTimeout(() => $("#hud").classList.add("off"), 3500); }
+function showHud() {
+  $("#hud").classList.remove("off"); clearTimeout(hudTimer);
+  hudTimer = setTimeout(() => { if (!document.body.classList.contains("sheet") && !dragging) $("#hud").classList.add("off"); }, 4000);
+}
+function hideHud() { clearTimeout(hudTimer); $("#hud").classList.add("off"); }
+let toastTimer = null;
+function toast(msg, label, fn) {
+  const t = $("#toast"); t.firstElementChild.textContent = msg;
+  const b = t.lastElementChild; b.textContent = label || ""; b.classList.toggle("hidden", !label); b.onclick = fn || null;
+  t.classList.remove("hidden"); clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add("hidden"), label ? 7000 : 3500);
+}
 function setOff() { const v = S.offset / 1000; $("#off").textContent = (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2).replace(".", ",") + " s"; store.set("off", S.offset); }
+function openSheet() { document.body.classList.add("sheet"); clearTimeout(hudTimer); }
+function closeSheet() { document.body.classList.remove("sheet"); showHud(); }
+function setSwitch(id, on) { $(id).classList.toggle("on", on); }
 let wl = null;
 async function wake() { try { if ("wakeLock" in navigator && !document.hidden && (!wl || wl.released)) wl = await navigator.wakeLock.request("screen"); } catch (e) {} }
 
 function toSetup(err) {
-  clearTimeout(pollTimer); S.demo = false; S.lines = null;
+  clearTimeout(pollTimer); S.demo = false; S.lines = null; S.track = null;
+  document.body.classList.remove("sheet");
   $("#app").classList.add("hidden"); $("#setup").classList.remove("hidden");
   $("#setupErr").textContent = err || "";
 }
 function toApp() {
   $("#setup").classList.add("hidden"); $("#app").classList.remove("hidden");
-  document.body.classList.toggle("nonext", !store.get("next", true));
-  const trOn = store.get("tr", true);
-  document.body.classList.toggle("notr", !trOn); $("#toggleTr").classList.toggle("on", trOn);
-  setOff(); setSize(S.size); showHud(); wake();
-  if (!S.demo) { showMsg("♪", "Collegamento a Spotify…"); poll(); }
+  const nx = store.get("next", true), trOn = store.get("tr", true);
+  document.body.classList.toggle("nonext", !nx); setSwitch("#swNext", nx);
+  document.body.classList.toggle("notr", !trOn); setSwitch("#swTr", trOn);
+  setOff(); setSize(S.size); showHud(); wake(); updatePlayIcon();
+  if (!S.demo) {
+    showMsg("♪", "Collegamento a Spotify…"); poll();
+    if (!canControl()) toast("Novità: pausa e salto tra le strofe. Serve un nuovo accesso a Spotify.", "Accedi", login);
+  }
 }
 function startDemo() {
   S.demo = true; toApp();
   const demo = [["00:01.00", "This is a karaoke demo", "Questa è una demo del karaoke"],
     ["00:04.50", "the words light up one by one", "le parole si accendono una alla volta"],
-    ["00:08.00", "", ""], ["00:10.00", "turn your phone sideways", "gira il telefono in orizzontale"],
-    ["00:13.50", "use plus and minus to change the size", "usa più e meno per cambiare la grandezza"],
-    ["00:17.00", "short lines", "righe corte"], ["00:19.00", "BIG!", "GRANDI!"],
-    ["00:21.00", "a much longer line than usual to see how it wraps without cutting any word", "una riga molto più lunga del solito per vedere come va a capo senza tagliare nessuna parola"],
-    ["00:27.00", "end of the demo", "fine della demo"]];
-  S.track = { id: "demo", name: "Demo", artist: "Karaoke" };
-  $("#trk").innerHTML = "<b>Demo</b> <span>· nessun accesso a Spotify</span>"; setSrc("demo");
+    ["00:08.00", "", ""],
+    ["00:10.00", "turn your phone sideways", "gira il telefono in orizzontale"],
+    ["00:13.50", "the buttons skip between verses", "i pulsanti saltano tra le strofe"],
+    ["00:17.00", "", ""],
+    ["00:18.00", "short lines", "righe corte"], ["00:20.00", "BIG!", "GRANDI!"],
+    ["00:22.00", "a much longer line than usual to see how it wraps without cutting any word", "una riga molto più lunga del solito per vedere come va a capo senza tagliare nessuna parola"],
+    ["00:28.00", "", ""],
+    ["00:29.00", "swipe on the text to move by one line", "scorri sul testo per spostarti di una riga"],
+    ["00:33.00", "end of the demo", "fine della demo"]];
+  S.track = { id: "demo", name: "Demo", artist: "Karaoke · nessun accesso a Spotify", dur: 37000 };
+  setTrackInfo(S.track.name, S.track.artist); setSrc("Demo");
   showLines(parseLRC(demo.map(d => "[" + d[0] + "]" + d[1]).join("\n")));
-  S.trans = new Map(demo.filter(d => d[1]).map(d => [d[1], d[2]])); S.basePos = 0; S.baseT = performance.now(); S.playing = true;
+  S.trans = new Map(demo.filter(d => d[1]).map(d => [d[1], d[2]]));
+  setPlayhead(0, true); updatePlayIcon();
   clearInterval(S.demoLoop);
-  S.demoLoop = setInterval(() => { if (!S.demo) return clearInterval(S.demoLoop); if (pos() > 30000) { S.basePos = 0; S.baseT = performance.now(); } }, 500);
+  S.demoLoop = setInterval(() => { if (!S.demo) return clearInterval(S.demoLoop); if (rawPos() >= S.track.dur) setPlayhead(0); }, 300);
 }
 
+/* ---- eventi ---- */
 $("#login").onclick = login;
 $("#demo").onclick = startDemo;
 $("#copyRedir").onclick = e => {
@@ -455,27 +666,66 @@ $("#copyRedir").onclick = e => {
   (navigator.clipboard ? navigator.clipboard.writeText(REDIRECT) : Promise.reject())
     .then(() => { b.textContent = "Copiato ✓"; }, () => { const r = document.createRange(); r.selectNodeContents($("#redir")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
 };
-$("#plus").onclick = () => { S.offset += 250; setOff(); showHud(); };
-$("#minus").onclick = () => { S.offset -= 250; setOff(); showHud(); };
-$("#bigger").onclick = () => { setSize(S.size + 1); showHud(); };
-$("#smaller").onclick = () => { setSize(S.size - 1); showHud(); };
-$("#toggleTr").onclick = () => {
-  const off = document.body.classList.toggle("notr"); store.set("tr", !off);
-  $("#toggleTr").classList.toggle("on", !off);
-  if (!off) ensureTranslation();
-  requestAnimationFrame(fitAll); showHud();
+$("#play").onclick = () => { togglePlay(); showHud(); };
+$("#prevSt").onclick = () => jumpStanza(-1);
+$("#nextSt").onclick = () => jumpStanza(1);
+$("#openSheet").onclick = openSheet;
+$("#sheetBg").onclick = closeSheet;
+$("#bigger").onclick = () => setSize(S.size + 1);
+$("#smaller").onclick = () => setSize(S.size - 1);
+$("#plus").onclick = () => { S.offset += 250; setOff(); };
+$("#minus").onclick = () => { S.offset -= 250; setOff(); };
+$("#swTr").onclick = () => {
+  const on = document.body.classList.toggle("notr") === false; store.set("tr", on); setSwitch("#swTr", on);
+  if (on) ensureTranslation(); requestAnimationFrame(fitAll);
 };
-$("#toggleNext").onclick =() => { const on = document.body.classList.toggle("nonext"); store.set("next", !on); requestAnimationFrame(fitAll); showHud(); };
+$("#swNext").onclick = () => {
+  const on = document.body.classList.toggle("nonext") === false; store.set("next", on); setSwitch("#swNext", on);
+  requestAnimationFrame(fitAll);
+};
 $("#fs").onclick = () => {
   const d = document, el = d.documentElement;
   try {
     if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
     else { const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (p && p.catch) p.catch(() => {}); }
   } catch (e) {}
-  showHud();
 };
 $("#logout").onclick = () => { store.del("tok"); toSetup(""); };
-["#stage", "#msg", "#plain"].forEach(s => $(s).addEventListener("click", () => { showHud(); wake(); }));
+
+/* tocco = mostra/nascondi comandi; scorrimento orizzontale = riga avanti/indietro */
+let sx = 0, sy = 0, st = 0;
+["#stage", "#msg", "#plain"].forEach(s => {
+  const el = $(s);
+  el.addEventListener("pointerdown", e => { sx = e.clientX; sy = e.clientY; st = performance.now(); });
+  el.addEventListener("pointerup", e => {
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    wake();
+    if (s === "#stage" && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && performance.now() - st < 700) {
+      jumpLine(dx < 0 ? 1 : -1); return;
+    }
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) { $("#hud").classList.contains("off") ? showHud() : hideHud(); }
+  });
+});
+/* barra di avanzamento: tocca o trascina per spostarti nel brano */
+(function () {
+  const bar = $("#bar");
+  const frac = e => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
+  const show = f => { $("#bar .fill").style.width = f * 100 + "%"; $("#bar .knob").style.left = f * 100 + "%"; $("#tNow").textContent = fmt(f * ((S.track && S.track.dur) || 0)); };
+  bar.addEventListener("pointerdown", e => { if (!S.track) return; dragging = true; bar.setPointerCapture(e.pointerId); show(frac(e)); showHud(); });
+  bar.addEventListener("pointermove", e => { if (dragging) show(frac(e)); });
+  bar.addEventListener("pointerup", e => { if (!dragging) return; dragging = false; seekTo(frac(e) * S.track.dur); showHud(); });
+  bar.addEventListener("pointercancel", () => { dragging = false; });
+})();
+/* tastiera (PC): spazio = pausa, frecce = strofe, su/giù = righe */
+document.addEventListener("keydown", e => {
+  if ($("#app").classList.contains("hidden") || e.target.tagName === "INPUT") return;
+  if (e.key === " ") { e.preventDefault(); togglePlay(); }
+  else if (e.key === "ArrowRight") jumpStanza(1);
+  else if (e.key === "ArrowLeft") jumpStanza(-1);
+  else if (e.key === "ArrowDown") jumpLine(1);
+  else if (e.key === "ArrowUp") jumpLine(-1);
+  else if (e.key === "Escape") closeSheet();
+});
 new ResizeObserver(() => fitAll()).observe($("#stage"));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { wake(); if (!$("#app").classList.contains("hidden")) poll(); } });
 
