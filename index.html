@@ -287,6 +287,7 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
     <div class="set"><div class="l">Mostra riga successiva</div><button class="sw" id="swNext" aria-label="Riga successiva"></button></div>
     <div class="sheetbtns"><button class="btn install hidden">Installa l'app</button><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
     <div id="src"></div>
+    <div id="ver" style="color:var(--faint);font-size:11px;text-align:center;margin-top:6px"></div>
   </div>
   <div id="trSheet" role="dialog" aria-label="Brani">
     <div class="grab"></div>
@@ -1101,9 +1102,19 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
+const APP_VERSION = "27/11/2026 01:20";
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  const hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  // quando arriva una versione nuova dell'app, ricarica la pagina una volta
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadSW && !reloaded) { reloaded = true; location.reload(); } });
+}
 
 (async function start() {
+  $("#ver").textContent = "Versione " + APP_VERSION;
   $("#redir").textContent = REDIRECT;
   $("#cid").value = store.get("cid", "");
   if (location.protocol === "file:" || !window.isSecureContext)

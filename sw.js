@@ -1,6 +1,6 @@
 // Service worker: rende l'app installabile e la apre anche con rete lenta.
 // Solo i file dell'app vengono messi in cache; Spotify, LRCLIB e Google passano sempre dalla rete.
-const CACHE = "karaoke-v7";
+const CACHE = "karaoke-v8";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
@@ -15,7 +15,8 @@ self.addEventListener("fetch", e => {
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   // prima la rete (così gli aggiornamenti arrivano subito), poi la copia salvata
   e.respondWith(
-    fetch(e.request).then(r => {
+    // "no-cache": chiede sempre al server se il file è cambiato, così gli aggiornamenti arrivano subito
+    fetch(e.request.url, { cache: "no-cache", credentials: "same-origin" }).then(r => {
       if (r.ok && !url.search) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return r;
     }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match("./index.html")))
