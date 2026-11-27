@@ -1001,7 +1001,8 @@ async function chooseTrack(uri) {
   const pl = trCurPl; closeSheet();
   let ok;
   if (sortKey()) ok = await playAZ(pl.uri, pl.name, uri, 0, sortKey());
-  else if (pl.uri === LIKED) ok = await playList(pl.uri, pl.name, { startUri: uri, shuffle: S.shuffle });
+  // brani preferiti e radio non sono playlist Spotify: si riproducono come elenco di brani
+  else if (!/^spotify:/.test(pl.uri)) ok = await playList(pl.uri, pl.name, { startUri: uri, shuffle: S.shuffle });
   else ok = await play({ context_uri: pl.uri, offset: { uri } });
   if (ok) { S.holdUntil = 0; setTimeout(poll, 700); setTimeout(poll, 1800); }
 }
@@ -1490,7 +1491,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 22:20";
+const APP_VERSION = "27/11/2026 22:30";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
