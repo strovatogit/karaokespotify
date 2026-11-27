@@ -77,10 +77,19 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #mini i{display:block;height:100%;width:0;background:var(--acc)}
 
 /* ---------- comandi a scomparsa ---------- */
-#hud{position:absolute;inset:0;pointer-events:none;transition:opacity .3s}
-#hud.off{opacity:0}
-#hud .top,#hud .bot{position:absolute;left:0;right:0;pointer-events:auto}
-#hud.off .top,#hud.off .bot{pointer-events:none}
+#hud{position:absolute;inset:0;pointer-events:none}
+#hud .top,#hud .bot{position:absolute;left:0;right:0;pointer-events:auto;transition:opacity .3s}
+#hud.off .top,#hud.off .bot{opacity:0;pointer-events:none}
+/* barra in basso fissa (doppio tap): sempre visibile, il testo si sposta sopra */
+body.pinned #hud .bot{opacity:1;pointer-events:auto;background:linear-gradient(rgba(8,9,12,0),rgba(8,9,12,.97) 30px)}
+body.pinned #stage{padding-bottom:calc(var(--botH,170px) - 18px)}
+body.pinned #msg{bottom:calc(var(--botH,170px) - 30px)}
+body.pinned #plain{padding-bottom:calc(var(--botH,170px) + 20px)}
+body.pinned #mini{display:none}
+#unpin{position:absolute;right:calc(10px + var(--sar));top:22px;width:36px;height:36px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.12);color:var(--fg)}
+#unpin:active{background:rgba(255,255,255,.25)}
+body.pinned #unpin{display:flex}
 #hud .top{top:0;display:flex;align-items:center;gap:12px;
   padding:calc(10px + var(--sat)) calc(12px + var(--sar)) 28px calc(16px + var(--sal));
   background:linear-gradient(rgba(8,9,12,.95) 40%,rgba(8,9,12,0))}
@@ -240,6 +249,9 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
       </button>
     </div>
     <div class="bot">
+      <button id="unpin" aria-label="Torna alla barra a comparsa">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
       <div id="trk"><div class="t"></div><div class="a"></div></div>
       <div class="prog"><span id="tNow">0:00</span>
         <div id="bar"><div class="rail"><div class="fill"></div><div class="knob"></div></div></div>
@@ -923,6 +935,13 @@ function showHud() {
   hudTimer = setTimeout(() => { if (!document.body.dataset.sheet && !dragging) $("#hud").classList.add("off"); }, 4000);
 }
 function hideHud() { clearTimeout(hudTimer); $("#hud").classList.add("off"); }
+function setPinned(on, quiet) {
+  document.body.classList.toggle("pinned", on); store.set("pinned", on);
+  if (!quiet) toast(on ? "Barra fissa: tocca ✕ per farla tornare a comparsa." : "Barra a comparsa: tocca il testo per vederla.");
+  requestAnimationFrame(fitAll);
+}
+// altezza reale della barra in basso, per lasciare spazio al testo quando è fissa
+new ResizeObserver(() => document.documentElement.style.setProperty("--botH", $("#hud .bot").offsetHeight + "px")).observe($("#hud .bot"));
 let toastTimer = null;
 function toast(msg, label, fn) {
   const t = $("#toast"); t.firstElementChild.textContent = msg;
@@ -948,6 +967,7 @@ function toApp() {
   const nx = store.get("next", true), trOn = store.get("tr", true);
   document.body.classList.toggle("nonext", !nx); setSwitch("#swNext", nx);
   document.body.classList.toggle("notr", !trOn); setSwitch("#swTr", trOn);
+  setPinned(!!store.get("pinned", false), true);
   setOff(); setSize(S.size); showHud(); wake(); updatePlayIcon();
   if (!S.demo) {
     showMsg("♪", "Collegamento a Spotify…"); poll();
@@ -993,6 +1013,7 @@ $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => { const b = e.target.closest(".pli"); if (b) choosePlaylist(b.dataset.uri, b.dataset.name); };
 $("#prevTr").onclick = () => skipTrack(-1);
 $("#trBtn").onclick = openTracks;
+$("#unpin").onclick = () => { setPinned(false); showHud(); };
 $("#orderBtn").onclick = toggleOrder;
 $("#trSearch").oninput = () => renderTracks(false);
 $("#trList").onclick = e => { const b = e.target.closest(".tri"); if (b) chooseTrack(b.dataset.uri); };
@@ -1020,7 +1041,7 @@ $("#fs").onclick = () => {
 $("#logout").onclick = () => { store.del("tok"); toSetup(""); };
 
 /* tocco = mostra/nascondi comandi; scorrimento orizzontale = riga avanti/indietro */
-let sx = 0, sy = 0, st = 0;
+let sx = 0, sy = 0, st = 0, lastTap = 0;
 ["#stage", "#msg", "#plain"].forEach(s => {
   const el = $(s);
   el.addEventListener("pointerdown", e => { sx = e.clientX; sy = e.clientY; st = performance.now(); });
@@ -1030,7 +1051,12 @@ let sx = 0, sy = 0, st = 0;
     if (s === "#stage" && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && performance.now() - st < 700) {
       jumpLine(dx < 0 ? 1 : -1); return;
     }
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) { $("#hud").classList.contains("off") ? showHud() : hideHud(); }
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      const now = performance.now();
+      if (now - lastTap < 320) { lastTap = 0; showHud(); if (!document.body.classList.contains("pinned")) setPinned(true); return; } // doppio tap
+      lastTap = now;
+      $("#hud").classList.contains("off") ? showHud() : hideHud();
+    }
   });
 });
 /* barra di avanzamento: tocca o trascina per spostarti nel brano */
