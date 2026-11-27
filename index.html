@@ -91,10 +91,6 @@ body.pinned #stage{padding-bottom:calc(var(--botH,170px) - 18px)}
 body.pinned #msg{bottom:calc(var(--botH,170px) - 30px)}
 body.pinned #plain{padding-bottom:calc(var(--botH,170px) + 20px)}
 body.pinned #mini{display:none}
-#unpin{position:absolute;right:calc(10px + var(--sar));top:22px;width:36px;height:36px;border-radius:50%;
-  display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.12);color:var(--fg)}
-#unpin:active{background:rgba(255,255,255,.25)}
-body.pinned #unpin{display:flex}
 #hud .top{top:0;display:flex;align-items:center;gap:12px;
   padding:calc(10px + var(--sat)) calc(12px + var(--sar)) 28px calc(16px + var(--sal));
   background:linear-gradient(rgba(8,9,12,.95) 40%,rgba(8,9,12,0))}
@@ -267,9 +263,6 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
       </button>
     </div>
     <div class="bot">
-      <button id="unpin" aria-label="Torna alla barra a comparsa">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
       <div id="trk"><div class="t"></div><div class="a"></div></div>
       <div class="prog"><span id="tNow">0:00</span>
         <div id="bar"><div class="rail"><div class="fill"></div><div class="knob"></div></div></div>
@@ -997,7 +990,7 @@ function showHud() {
 function hideHud() { clearTimeout(hudTimer); $("#hud").classList.add("off"); }
 function setPinned(on, quiet) {
   document.body.classList.toggle("pinned", on); store.set("pinned", on);
-  if (!quiet) toast(on ? "Barra fissa: tocca ✕ per farla tornare a comparsa." : "Barra a comparsa: tocca il testo per vederla.");
+  if (!quiet) toast(on ? "Barra fissa: doppio tocco sul testo per farla tornare a comparsa." : "Barra a comparsa: doppio tocco sul testo per fissarla.");
   requestAnimationFrame(fitAll);
 }
 // altezza reale della barra in basso, per lasciare spazio al testo quando è fissa
@@ -1075,7 +1068,6 @@ $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => { const b = e.target.closest(".pli"); if (b) choosePlaylist(b.dataset.uri, b.dataset.name); };
 $("#prevTr").onclick = () => skipTrack(-1);
 $("#trBtn").onclick = openTracks;
-$("#unpin").onclick = () => { setPinned(false); showHud(); };
 $("#orderBtn").onclick = toggleOrder;
 $("#trSearch").oninput = () => renderTracks(false);
 $("#trList").onclick = e => { const b = e.target.closest(".tri"); if (b) chooseTrack(b.dataset.uri); };
@@ -1157,7 +1149,7 @@ document.addEventListener("touchmove", e => { if (e.touches.length > 1) e.preven
         }
       }
       const now = performance.now();
-      if (now - lastTap < 320) { lastTap = 0; showHud(); if (!document.body.classList.contains("pinned")) setPinned(true); return; } // doppio tap
+      if (now - lastTap < 320) { lastTap = 0; showHud(); setPinned(!document.body.classList.contains("pinned")); return; } // doppio tap: fissa / a comparsa
       lastTap = now;
       $("#hud").classList.contains("off") ? showHud() : hideHud();
     }
@@ -1205,7 +1197,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 10:05";
+const APP_VERSION = "27/11/2026 10:10";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
