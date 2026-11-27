@@ -1,6 +1,16 @@
 # 🎤 Karaoke Spotify
 
+[![Apri l'app](https://img.shields.io/badge/apri%20l'app-strovatogit.github.io%2Fkaraokespotify-1ed760?style=for-the-badge&logo=googlechrome&logoColor=white)](https://strovatogit.github.io/karaokespotify/)
+
+![PWA](https://img.shields.io/badge/PWA-installabile-5a0fc8?logo=pwa&logoColor=white)
+![Android](https://img.shields.io/badge/Android-supportato-3ddc84?logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iPhone%20%2F%20iPad-supportato-000000?logo=apple&logoColor=white)
+![Nessuna dipendenza](https://img.shields.io/badge/dipendenze-nessuna-brightgreen)
+![Licenza MIT](https://img.shields.io/badge/licenza-MIT-blue)
+
 Web app (PWA) che mostra **in stile karaoke il testo sincronizzato** del brano che stai ascoltando su Spotify, con la **traduzione in italiano** sotto ogni riga. Dall'app controlli anche la riproduzione: pausa, salti tra strofe e brani, playlist, ordine e dispositivo.
+
+> 🇬🇧 **English:** *Karaoke Spotify* is a free, open-source **karaoke web app for Spotify**: it shows **real-time synced lyrics** (LRC, from LRCLIB) of the song currently playing on Spotify, with an **Italian translation** under each line, big full-screen text in portrait and landscape, and playback controls (play/pause, skip verse or track, playlists, Liked Songs, sort by title/artist, shuffle, Spotify Connect device picker). Installable **PWA** for Android and iPhone, single HTML file, no server, no build. [Jump to installation](#installazione).
 
 **Indirizzo:** https://strovatogit.github.io/karaokespotify/
 
@@ -24,6 +34,7 @@ Web app (PWA) che mostra **in stile karaoke il testo sincronizzato** del brano c
 - [Struttura del progetto](#struttura-del-progetto)
 - [Pubblicare un aggiornamento](#pubblicare-un-aggiornamento)
 - [Privacy](#privacy)
+- [Licenza e note legali](#licenza-e-note-legali)
 
 ---
 
@@ -277,3 +288,15 @@ Parti principali di `index.html`:
 - Non c'è nessun server dell'app. Tutto avviene nel browser di chi la usa.
 - Client ID, token di accesso Spotify e impostazioni sono salvati solo nel `localStorage` del dispositivo. **Esci** cancella il token.
 - Le richieste partono dal dispositivo verso Spotify per riproduzione e libreria, verso LRCLIB con titolo, artista, album e durata del brano, e verso Google con il testo da tradurre.
+
+---
+
+## Licenza e note legali
+
+- Codice distribuito con licenza **MIT**: vedi [LICENSE](LICENSE).
+- Progetto **non ufficiale**, non affiliato né approvato da Spotify. *Spotify* è un marchio di Spotify AB.
+- I testi delle canzoni appartengono ai rispettivi autori. L'app li mostra per uso personale leggendoli da LRCLIB, ma non li conserva né li distribuisce.
+
+---
+
+<sub>Parole chiave: karaoke, Spotify, testi sincronizzati, testo canzoni, lyrics, synced lyrics, LRC, LRCLIB, traduzione testi canzoni, traduzione in italiano, sing along, PWA, progressive web app, Android, iPhone, Spotify Web API, Spotify Connect, Spotify karaoke app, lyrics translation.</sub>
