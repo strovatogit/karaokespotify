@@ -198,6 +198,13 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .dev .o{font-size:12px;color:var(--muted);margin-top:1px}
 .dev.cur .n,.dev.cur svg{color:var(--acc)}
 .dev[disabled]{opacity:.4}
+.devrow{display:flex;align-items:center;gap:6px}
+.devrow .dev{flex:1;min-width:0}
+.devrow .mark{flex:none;font-size:12px;font-weight:600;color:var(--acc);padding:8px 10px;border-radius:999px;border:1px solid rgba(30,215,96,.4)}
+.badge{display:inline-block;font-size:11px;font-weight:700;color:#000;background:var(--acc);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px}
+.dev.missing{opacity:.75}
+.dev.missing .n{color:var(--fg)}
+.openSp{flex:none;font-size:13px;font-weight:700;color:#000;background:var(--acc);border-radius:999px;padding:8px 12px}
 .devmsg{color:var(--muted);font-size:13px;line-height:1.45;padding:6px 8px 10px;margin:0}
 .sheetbtns .btn{flex:1;text-align:center}
 #src{color:var(--muted);font-size:12px;margin-top:12px;text-align:center}
@@ -469,19 +476,33 @@ async function player(method, path, body, soft404) {
   } catch (e) { toast("Connessione non riuscita."); }
   return false;
 }
+async function getDevices() { const j = await api("me/player/devices"); return ((j && j.devices) || []).filter(x => x && x.id); }
+// "questo dispositivo": il telefono (o PC) su cui è aperta l'app karaoke, scelto dall'utente
+const myDev = () => store.get("mydev", null);
+const isMine = (d, m) => !!(m && d && (d.id === m.id || (d.name === m.name && (d.type || "") === (m.type || "")))) ;
 async function pickDevice() {
   try {
-    const j = await api("me/player/devices");
-    const d = ((j && j.devices) || []).filter(x => !x.is_restricted && x.id);
-    return d.find(x => x.is_active) || d.find(x => /smartphone/i.test(x.type)) || d[0] || null;
+    const d = (await getDevices()).filter(x => !x.is_restricted);
+    return d.find(x => isMine(x, myDev())) || d.find(x => x.is_active) || d.find(x => /smartphone/i.test(x.type)) || d[0] || null;
   } catch (e) { return null; }
 }
-// avvia o riprende la riproduzione; se nessun dispositivo è attivo usa quello disponibile
+function openSpotify() { try { location.href = "spotify:"; } catch (e) {} }
+// avvia o riprende la riproduzione: su questo dispositivo, a meno che tu non ne abbia scelto un altro
 async function play(body) {
+  const m = myDev();
+  if (m && !S.chosenDev && !S.demo) {
+    let devs = null; try { devs = await getDevices(); } catch (e) {}
+    if (devs) {
+      const d = devs.find(x => isMine(x, m));
+      if (!d) { toast("Spotify non è aperto su questo dispositivo: aprilo, poi torna qui e premi play.", "Apri Spotify", openSpotify); return false; }
+      if (d.id !== m.id) store.set("mydev", { id: d.id, name: d.name, type: d.type });
+      if (!d.is_active) return (await player("PUT", "play?device_id=" + encodeURIComponent(d.id), body)) === true;
+    }
+  }
   let res = await player("PUT", "play", body, true);
   if (res === 404) {
     const dev = await pickDevice();
-    if (!dev) { toast("Nessun dispositivo Spotify trovato: apri l'app Spotify sul telefono e riprova."); return false; }
+    if (!dev) { toast("Nessun dispositivo Spotify trovato: apri l'app Spotify e riprova.", "Apri Spotify", openSpotify); return false; }
     res = await player("PUT", "play?device_id=" + encodeURIComponent(dev.id), body);
   }
   return res === true;
@@ -522,20 +543,38 @@ function devIcon(type) {
   if (t === "tv" || t === "castvideo" || t === "stb") return a + '<rect x="2.5" y="5" width="19" height="12.5" rx="2"/><path d="M8 21h8"/></svg>';
   return a + '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><circle cx="12" cy="14.5" r="3.2"/><circle cx="12" cy="7" r="1"/></svg>';
 }
+const mobileUA = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 async function loadDevices() {
   const box = $("#devList"), msg = t => { box.innerHTML = '<p class="devmsg">' + t + "</p>"; };
   if (S.demo) return msg("Nella demo non ci sono dispositivi.");
   if (!hasScopes()) return msg("Rifai l'accesso a Spotify per scegliere il dispositivo.");
   if (!box.children.length) msg("Cerco i dispositivi…");
-  try {
-    const j = await api("me/player/devices"), d = (j && j.devices) || [];
-    if (!d.length) return msg("Nessun dispositivo trovato. Apri Spotify sul telefono, sul PC o sulle casse e premi Aggiorna.");
-    box.innerHTML = d.map(x => '<button class="dev' + (x.is_active ? " cur" : "") + '" data-id="' + esc(x.id || "") + '" data-name="' + esc(x.name) + '"'
-      + (x.is_restricted || !x.id ? " disabled" : "") + ">" + devIcon(x.type)
-      + '<div><div class="n">' + esc(x.name) + '</div><div class="o">' + esc(DEV_TYPES[(x.type || "").toLowerCase()] || x.type || "")
-      + (x.is_active ? " · in riproduzione" : "") + (x.is_restricted ? " · non controllabile" : "") + "</div></div></button>").join("")
-      + '<p class="devmsg">Non vedi un dispositivo? Apri Spotify su quel dispositivo e premi Aggiorna.</p>';
-  } catch (e) { msg("Impossibile leggere i dispositivi (" + esc(e.message) + ")."); }
+  let d;
+  try { d = await getDevices(); } catch (e) { return msg("Impossibile leggere i dispositivi (" + esc(e.message) + ")."); }
+  let m = myDev();
+  // primo utilizzo: se c'è un solo telefono (o un solo computer) lo considero questo dispositivo
+  if (!m) {
+    const same = d.filter(x => mobileUA ? /smartphone|tablet/i.test(x.type) : /computer/i.test(x.type));
+    if (same.length === 1) { m = { id: same[0].id, name: same[0].name, type: same[0].type }; store.set("mydev", m); }
+  }
+  const mine = d.find(x => isMine(x, m)), others = d.filter(x => x !== mine);
+  const row = (x, isMe) => '<div class="devrow"><button class="dev' + (x.is_active ? " cur" : "") + '" data-id="' + esc(x.id) + '" data-name="' + esc(x.name) + '" data-type="' + esc(x.type || "") + '"'
+    + (x.is_restricted ? " disabled" : "") + ">" + devIcon(x.type)
+    + '<div><div class="n">' + (isMe ? "Questo dispositivo" : esc(x.name)) + (isMe ? '<span class="badge">TU</span>' : "") + '</div><div class="o">'
+    + (isMe ? esc(x.name) + " · " : "") + esc(DEV_TYPES[(x.type || "").toLowerCase()] || x.type || "")
+    + (x.is_active ? " · in riproduzione" : "") + (x.is_restricted ? " · non controllabile" : "") + "</div></div></button>"
+    + (!m && !x.is_restricted ? '<button class="mark" data-mark="' + esc(x.id) + '">È questo</button>' : "") + "</div>";
+  let html = "";
+  if (mine) html += row(mine, true);
+  else if (m) html += '<div class="devrow"><div class="dev missing">' + devIcon(m.type) + '<div><div class="n">Questo dispositivo<span class="badge">TU</span></div><div class="o">'
+    + esc(m.name) + " · Spotify non è aperto qui</div></div></div><button class=\"openSp\" id=\"openSp\">Apri Spotify</button></div>";
+  html += others.map(x => row(x, false)).join("");
+  if (!m) html = '<p class="devmsg">Qual è questo telefono? Tocca <b>È questo</b> accanto al suo nome: il play partirà sempre qui.</p>' + html;
+  html += '<p class="devmsg">' + (m ? '<a href="#" id="resetMine">Cambia “questo dispositivo”</a> · ' : "")
+    + "Non vedi un dispositivo? Apri Spotify su quel dispositivo e premi Aggiorna.</p>";
+  if (!d.length && !m) html = '<p class="devmsg">Nessun dispositivo trovato. Apri Spotify su questo telefono e premi Aggiorna.</p>'
+    + '<div class="devrow"><button class="openSp" id="openSp">Apri Spotify</button></div>';
+  box.innerHTML = html;
 }
 async function transferTo(id, name) {
   if (!hasScopes()) { needLogin(); return; }
@@ -544,7 +583,10 @@ async function transferTo(id, name) {
     const r = await fetch("https://api.spotify.com/v1/me/player", { method: "PUT",
       headers: { Authorization: "Bearer " + tok, "Content-Type": "application/json" },
       body: JSON.stringify({ device_ids: [id], play: S.playing || !S.track }) });
-    if (r.ok) { toast("Ora suona su " + name); setTimeout(loadDevices, 1500); setTimeout(poll, 1200); }
+    if (r.ok) {
+      S.chosenDev = isMine({ id, name }, myDev()) || (myDev() && myDev().id === id) ? null : id; // scelta esplicita di un altro dispositivo
+      toast("Ora suona su " + name); setTimeout(loadDevices, 1500); setTimeout(poll, 1200);
+    }
     else toast("Non riesco a passare a " + name + " (" + r.status + ").");
   } catch (e) { toast("Connessione non riuscita."); }
 }
@@ -1062,7 +1104,13 @@ $("#prevSt").onclick = () => jumpStanza(-1);
 $("#nextSt").onclick = () => jumpStanza(1);
 $("#openSheet").onclick = () => { openSheet("set"); loadDevices(); };
 $("#devRefresh").onclick = loadDevices;
-$("#devList").onclick = e => { const b = e.target.closest(".dev"); if (b && !b.disabled) transferTo(b.dataset.id, b.dataset.name); };
+$("#devList").onclick = e => {
+  if (e.target.closest("#openSp")) { openSpotify(); return; }
+  if (e.target.closest("#resetMine")) { e.preventDefault(); store.del("mydev"); S.chosenDev = null; loadDevices(); return; }
+  const mk = e.target.closest(".mark");
+  if (mk) { const b = mk.parentElement.querySelector(".dev"); store.set("mydev", { id: b.dataset.id, name: b.dataset.name, type: b.dataset.type || "" }); S.chosenDev = null; loadDevices(); return; }
+  const b = e.target.closest("button.dev"); if (b && !b.disabled) transferTo(b.dataset.id, b.dataset.name);
+};
 $("#plBtn").onclick = openPlaylists;
 $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => { const b = e.target.closest(".pli"); if (b) choosePlaylist(b.dataset.uri, b.dataset.name); };
@@ -1197,7 +1245,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 10:10";
+const APP_VERSION = "27/11/2026 14:10";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
