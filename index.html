@@ -151,7 +151,24 @@ body.pinned #mini{display:none}
 #trSheet{position:absolute;left:50%;bottom:0;width:min(100%,520px);transform:translate(-50%,105%);z-index:21;
   background:var(--panel);border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;
   padding:10px 14px calc(10px + var(--sab));transition:transform .28s cubic-bezier(.2,.8,.2,1);height:88vh;display:flex;flex-direction:column}
-body[data-sheet="tr"] #trSheet{transform:translate(-50%,0)}
+body[data-sheet="tr"] #trSheet,body[data-sheet="sr"] #srSheet{transform:translate(-50%,0)}
+#srSheet{position:absolute;left:50%;top:0;bottom:0;width:min(100%,520px);transform:translate(-50%,105%);z-index:21;
+  background:var(--panel);border:1px solid var(--line);border-bottom:0;
+  padding:calc(12px + var(--sat)) 14px calc(10px + var(--sab));transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.srhead{display:flex;gap:8px;align-items:center;flex:none;margin-bottom:8px}
+#srInput{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:16px}
+#srClose{font-size:15px;font-weight:600;color:var(--acc);padding:8px 4px}
+#srList{flex:1;overflow:auto;margin:0 -4px}
+.sri{display:flex;align-items:center;gap:6px}
+.sri .pick{display:flex;gap:12px;align-items:center;flex:1;min-width:0;padding:8px;border-radius:12px;text-align:left}
+.sri .pick:active{background:rgba(255,255,255,.08)}
+.sri img,.sri .ph{width:48px;height:48px;border-radius:6px;object-fit:cover;flex:none;background:#2a2d35;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.sri .pick>div{min-width:0}
+.sri .n{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sri .o{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sri .q{flex:none;font-size:12px;font-weight:600;color:var(--acc);border:1px solid rgba(30,215,96,.4);border-radius:999px;padding:7px 10px}
+.sri .q:active{background:rgba(30,215,96,.15)}
+#srMore{display:block;margin:10px auto;font-size:14px;font-weight:600;color:var(--acc);padding:8px 14px}
 #trSheet h2{font-size:17px;margin:4px 4px 2px}
 #trSub{color:var(--muted);font-size:13px;margin:0 4px 10px}
 #trSearch{width:100%;padding:11px 14px;border-radius:12px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:16px;margin-bottom:8px;flex:none}
@@ -168,6 +185,13 @@ body[data-sheet="tr"] #trSheet{transform:translate(-50%,0)}
 .chip.on{background:rgba(30,215,96,.18);border-color:rgba(30,215,96,.45);color:var(--acc)}
 .chip:active{filter:brightness(1.3)}
 #hud .top .ib{flex:none;width:42px;height:42px}
+@media (max-width:440px){
+  #hud .top{gap:4px;padding-left:calc(10px + var(--sal));padding-right:calc(6px + var(--sar))}
+  #hud .top .ib{width:38px;height:40px}
+  .chip{padding:0 9px;font-size:12px}
+  .chip svg{display:none}
+  .pill{padding:8px 9px;gap:6px}
+}
 body[data-sheet] #sheetBg{opacity:1;pointer-events:auto}
 body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate(-50%,0)}
 .grab{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 10px;flex:none}
@@ -266,6 +290,9 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
         <span id="plName">Brani che mi piacciono</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
+      <button class="ib" id="srBtn" aria-label="Cerca un brano">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+      </button>
       <button class="ib" id="trBtn" aria-label="Brani della playlist">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.2" fill="currentColor"/><circle cx="3.5" cy="12" r="1.2" fill="currentColor"/><circle cx="3.5" cy="18" r="1.2" fill="currentColor"/></svg>
       </button>
@@ -318,6 +345,10 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
     <div class="sheetbtns"><button class="btn install hidden">Installa l'app</button><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
     <div id="src"></div>
     <div id="ver" style="color:var(--faint);font-size:11px;text-align:center;margin-top:6px"></div>
+  </div>
+  <div id="srSheet" role="dialog" aria-label="Cerca un brano">
+    <div class="srhead"><input id="srInput" type="search" placeholder="Titolo, cantante o parole del titolo" autocomplete="off" enterkeyhint="search"><button id="srClose">Chiudi</button></div>
+    <div id="srList"><p class="empty">Scrivi il titolo di un brano o il nome di un cantante.</p></div>
   </div>
   <div id="trSheet" role="dialog" aria-label="Brani">
     <div class="grab"></div>
@@ -767,6 +798,50 @@ async function toggleOrder() {
   }
   S.holdUntil = 0; setTimeout(poll, 900);
 }
+/* ---- ricerca di un brano nel catalogo Spotify ---- */
+let srTimer = null, srQuery = "", srOffset = 0, srSeq = 0;
+function openSearch() {
+  if (S.demo) { toast("Nella demo la ricerca non è disponibile: accedi con Spotify."); return; }
+  if (!hasScopes()) { needLogin(); return; }
+  openSheet("sr"); setTimeout(() => { try { $("#srInput").focus(); $("#srInput").select(); } catch (e) {} }, 300);
+}
+async function runSearch(more) {
+  const q = $("#srInput").value.trim(), seq = ++srSeq;
+  if (!more) { srQuery = q; srOffset = 0; }
+  if (!srQuery) { $("#srList").innerHTML = '<p class="empty">Scrivi il titolo di un brano o il nome di un cantante.</p>'; return; }
+  if (!more) $("#srList").innerHTML = '<p class="empty">Cerco…</p>';
+  try {
+    // Spotify restituisce al massimo 10 risultati per richiesta: "Altri risultati" carica i successivi
+    const j = await api("search?type=track&limit=10&offset=" + srOffset + "&q=" + encodeURIComponent(srQuery));
+    if (seq !== srSeq) return;
+    const items = ((j && j.tracks && j.tracks.items) || []).filter(Boolean);
+    const html = items.map(t => {
+      const img = ((t.album && t.album.images) || []).filter(Boolean).slice(-1)[0];
+      const sub = (t.artists || []).map(a => a.name).join(", ") + (t.album && t.album.name ? " · " + t.album.name : "");
+      return '<div class="sri"><button class="pick" data-uri="' + esc(t.uri) + '" data-album="' + esc((t.album && t.album.uri) || "") + '" data-name="' + esc(t.name) + '">'
+        + (img ? '<img loading="lazy" alt="" src="' + esc(img.url) + '">' : '<span class="ph">♪</span>')
+        + '<div><div class="n">' + esc(t.name) + '</div><div class="o">' + esc(sub) + " · " + fmt(t.duration_ms) + "</div></div></button>"
+        + '<button class="q" data-uri="' + esc(t.uri) + '" data-name="' + esc(t.name) + '">+ coda</button></div>';
+    }).join("");
+    const box = $("#srList"); const oldMore = $("#srMore"); if (oldMore) oldMore.remove();
+    if (!more) box.innerHTML = items.length ? html : '<p class="empty">Nessun brano trovato.</p>';
+    else box.insertAdjacentHTML("beforeend", html);
+    srOffset += items.length;
+    const total = (j && j.tracks && j.tracks.total) || 0;
+    if (items.length === 10 && srOffset < total && srOffset < 200) box.insertAdjacentHTML("beforeend", '<button id="srMore">Altri risultati</button>');
+  } catch (e) { if (seq === srSeq) $("#srList").innerHTML = '<p class="empty">Ricerca non riuscita (' + esc(e.message) + ").</p>"; }
+}
+// riproduce il brano scelto; poi la riproduzione continua con il resto del suo album
+async function playFound(uri, albumUri, name) {
+  closeSheet(); S.az = null;
+  toast("Avvio “" + name + "”…");
+  const ok = await play(albumUri ? { context_uri: albumUri, offset: { uri } } : { uris: [uri] });
+  if (ok) { S.holdUntil = 0; setTimeout(poll, 700); setTimeout(poll, 1800); }
+}
+async function queueFound(uri, name) {
+  if (await player("POST", "queue?uri=" + encodeURIComponent(uri))) toast("“" + name + "” aggiunto alla coda");
+}
+
 let trCurPl = null;
 async function openTracks() {
   if (S.demo) { toast("Nella demo non c'è una playlist: accedi con Spotify."); return; }
@@ -1127,6 +1202,15 @@ $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => { const b = e.target.closest(".pli"); if (b) choosePlaylist(b.dataset.uri, b.dataset.name); };
 $("#prevTr").onclick = () => skipTrack(-1);
 $("#trBtn").onclick = openTracks;
+$("#srBtn").onclick = openSearch;
+$("#srClose").onclick = closeSheet;
+$("#srInput").oninput = () => { clearTimeout(srTimer); srTimer = setTimeout(() => runSearch(false), 350); };
+$("#srInput").onkeydown = e => { if (e.key === "Enter") { clearTimeout(srTimer); runSearch(false); e.target.blur(); } };
+$("#srList").onclick = e => {
+  if (e.target.closest("#srMore")) { runSearch(true); return; }
+  const q = e.target.closest(".q"); if (q) { queueFound(q.dataset.uri, q.dataset.name); return; }
+  const p = e.target.closest(".pick"); if (p) playFound(p.dataset.uri, p.dataset.album, p.dataset.name);
+};
 $("#orderBtn").onclick = toggleOrder;
 $("#trSearch").oninput = () => renderTracks(false);
 $("#trList").onclick = e => { const b = e.target.closest(".tri"); if (b) chooseTrack(b.dataset.uri); };
@@ -1194,6 +1278,10 @@ document.addEventListener("touchmove", e => { if (e.touches.length > 1) e.preven
     if (pinchUsed) { if (pts.size === 0) pinchUsed = false; return; } // fine di un pizzico: non è un tocco
     const dx = e.clientX - sx, dy = e.clientY - sy;
     wake();
+    // scorrimento verticale: verso l'alto = strofa successiva, verso il basso = strofa precedente
+    if (s === "#stage" && Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx) * 1.5 && performance.now() - st < 800) {
+      jumpStanza(dy < 0 ? 1 : -1); return;
+    }
     if (s === "#stage" && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && performance.now() - st < 700) {
       jumpLine(dx < 0 ? 1 : -1); return;
     }
@@ -1233,10 +1321,18 @@ document.addEventListener("keydown", e => {
   else if (e.key === "ArrowDown") jumpLine(1);
   else if (e.key === "ArrowUp") jumpLine(-1);
   else if (e.key === "Escape") closeSheet();
+  else if (e.key === "/" || e.key === "f" || e.key === "F") { e.preventDefault(); openSearch(); }
   else if (e.key === "n" || e.key === "N") skipTrack(1);
   else if (e.key === "p" || e.key === "P") skipTrack(-1);
 });
 new ResizeObserver(() => fitAll()).observe($("#stage"));
+// rotella del mouse (PC): giù = strofa successiva, su = strofa precedente
+let wheelAt = 0;
+$("#stage").addEventListener("wheel", e => {
+  e.preventDefault();
+  if (Math.abs(e.deltaY) < 20 || performance.now() - wheelAt < 700) return;
+  wheelAt = performance.now(); jumpStanza(e.deltaY > 0 ? 1 : -1);
+}, { passive: false });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { wake(); if (!$("#app").classList.contains("hidden")) poll(); } });
 
 /* ---- PWA: installazione a schermo intero ---- */
@@ -1256,7 +1352,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 15:20";
+const APP_VERSION = "27/11/2026 22:00";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {

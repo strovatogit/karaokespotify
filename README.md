@@ -159,6 +159,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 |---|---|
 | **Tocco** sulla riga grande | Mostra o nasconde i comandi |
 | **Tocco** sulla riga grigia sopra o sotto | Il brano salta a quella riga |
+| **Scorrimento** verso l'alto o verso il basso | Strofa successiva o precedente (sul PC: rotella del mouse) |
 | **Scorrimento** a sinistra o a destra | Riga successiva o precedente |
 | **Pizzico** con due dita | Allarghi per ingrandire il testo, stringi per rimpicciolirlo (da 1/10 a Max) |
 | **Doppio tocco** | Fissa la barra in basso, oppure la rimette a comparsa |
@@ -169,6 +170,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 
 **In alto**
 - **Playlist in corso** (es. *Estate…*): toccala per scegliere un'altra playlist.
+- **Cerca** (lente): cerca un brano in tutto il catalogo Spotify.
 - **Elenco brani** (icona a lista).
 - **Ordine:** *In ordine*, *Titolo*, *Cantante* o *Casuale*.
 - **Impostazioni** (icona a cursori).
@@ -203,6 +205,15 @@ Tocca il nome della playlist in alto per vedere tutte le tue playlist, con ricer
 **Brani che mi piacciono** è sempre il primo dell'elenco ed è la **playlist predefinita**. Se non sta suonando niente, play fa partire quelli.
 
 <br clear="right">
+
+### Ricerca di un brano
+
+Tocca la lente in alto e scrivi titolo o cantante. I risultati arrivano mentre scrivi, 10 alla volta; *Altri risultati* carica i successivi.
+
+- **Tocco su un risultato:** il brano parte subito, poi la riproduzione continua con il resto del suo album.
+- **+ coda:** aggiunge il brano alla coda di Spotify, dopo quello in corso.
+
+Sul PC la ricerca si apre anche con il tasto `/`.
 
 ### Elenco brani e ordine
 
