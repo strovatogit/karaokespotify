@@ -1006,7 +1006,8 @@ function frame() {
 function fitBox(box) {
   const inner = box.firstElementChild, W = box.clientWidth, H = box.clientHeight;
   if (!inner || !W || !H || !inner.textContent.trim()) return;
-  let lo = 8, hi = Math.max(9, Math.floor(Math.min(H, sizeCap())));
+  // le righe precedente/successiva restano più piccole della riga corrente
+  let lo = 8, hi = Math.max(9, Math.floor(Math.min(H, sizeCap() * (box.id === "cur" ? 1 : 0.6))));
   while (hi - lo > 1) {
     const m = (lo + hi) >> 1; inner.style.fontSize = m + "px";
     if (inner.scrollWidth <= W + 0.5 && inner.offsetHeight <= H) lo = m; else hi = m;
@@ -1245,7 +1246,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 14:10";
+const APP_VERSION = "27/11/2026 15:20";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
