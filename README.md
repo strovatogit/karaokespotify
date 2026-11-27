@@ -260,7 +260,7 @@ Cambiando ordine, il brano in corso continua dal punto in cui eri. La scelta val
   - Play parte sempre su questo dispositivo, a meno che tu non abbia scelto un altro dispositivo dall'elenco.
   - Se Spotify non è aperto sul telefono, un pulsante **Apri Spotify** lo apre.
 - **Grandezza testo:** − / + da 1/10 a **Max**, come il pizzico. Parte da **5/10**.
-  - **Da 1 a 9:** tutte le righe del brano hanno la stessa grandezza, e ogni livello la cambia di circa l'11%. Il 5 è la grandezza con cui ci sta il 90% delle righe del brano. Dal 6 in su, le righe che non ci stanno si fermano alla grandezza massima possibile.
+  - **Da 1 a 9:** tutte le righe del brano hanno la stessa grandezza. Il 5 è la grandezza con cui ci sta il 90% delle righe del brano. Sotto il 5 la grandezza scende in modo graduale fino all'1, che è poco più di un quarto del 5. Sopra il 5 ogni livello aggiunge circa l'11%. Dal 6 in su, le righe che non ci stanno si fermano alla grandezza massima possibile.
   - **Max:** ogni riga riempie tutto lo spazio, quindi le righe corte diventano enormi.
   - **Testo non sincronizzato:** segue la stessa scala.
 - **Sincronia:** *Ritarda* / *Anticipa* a passi di 0,25 s, se il testo arriva presto o tardi.

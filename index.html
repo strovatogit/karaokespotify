@@ -1420,7 +1420,8 @@ function frame() {
    1–9: le righe del brano hanno tutte la stessa grandezza, calcolata in modo che ci stia il 90% delle righe
    ("misura del brano"; le poche righe più lunghe si rimpiccioliscono quanto serve) e moltiplicata per un fattore: 5 = misura del brano, ogni livello ±11%.
    Sopra il 5 le righe troppo lunghe si fermano alla grandezza massima che entra nello schermo. */
-const levelFactor = L => 0.55 + 0.1125 * (Math.min(Math.max(L, 1), 13) - 1); // 1 → 0,55 · 5 → 1 · 9 → 1,45
+// 1 → 0,275 · 2 → 0,38 · 3 → 0,52 · 4 → 0,72 · 5 → 1 (crescita graduale) · poi +11% a livello fino a 9 → 1,45
+const levelFactor = L => { L = Math.min(Math.max(L, 1), 13); return L <= 5 ? 0.275 * Math.pow(1 / 0.275, (L - 1) / 4) : 1 + 0.1125 * (L - 5); };
 function maxFit(inner, W, H, cap) {
   let lo = 8, hi = Math.max(9, Math.floor(Math.min(H, cap)));
   while (hi - lo > 1) {
@@ -1642,7 +1643,8 @@ function effectiveLevel() {
   // da "Max" si parte dalla grandezza che il testo ha davvero adesso, così il pizzico risponde subito
   const box = S.lines ? $("#cur .txt") : null, px = box ? parseFloat(box.style.fontSize) : 0;
   if (!px || !S.songFit) return 10;
-  return Math.max(1, Math.min(10, 1 + (px / S.songFit - 0.55) / 0.1125));
+  const f = px / S.songFit; // inverso di levelFactor
+  return Math.max(1, Math.min(10, f <= 1 ? 1 + 4 * Math.log(f / 0.275) / Math.log(1 / 0.275) : 5 + (f - 1) / 0.1125));
 }
 function showZoomTip() { const t = $("#zoomTip"); t.textContent = "Testo " + sizeLabel(); t.classList.add("show"); clearTimeout(tipTimer); tipTimer = setTimeout(() => t.classList.remove("show"), 700); }
 ["#stage", "#plain", "#msg"].forEach(sel => {
@@ -1747,7 +1749,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 23:45";
+const APP_VERSION = "27/11/2026 23:50";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
