@@ -206,6 +206,9 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .pli .o{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pli>div{min-width:0}
 .pli.cur .n{color:var(--acc)}
+.pli .ph.radio{background:linear-gradient(135deg,#ff7a59,#b5179e);color:#fff;font-size:24px}
+.lfm{display:block;padding:13px 0;border-top:1px solid var(--line)}
+.lfm input{width:100%;margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:15px;font-family:ui-monospace,Menlo,Consolas,monospace}
 .pli .ph.liked{background:linear-gradient(135deg,#1ed760,#0b6b34);color:#fff}
 .empty{color:var(--muted);text-align:center;padding:30px 10px}
 .set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
@@ -340,6 +343,8 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
       <div class="step"><button id="smaller" aria-label="Più piccolo">−</button><span class="v" id="size">Max</span><button id="bigger" aria-label="Più grande">+</button></div></div>
     <div class="set"><div class="l">Sincronia<small>Se il testo arriva presto o tardi</small></div>
       <div class="step"><button class="txtb" id="minus">Ritarda</button><span class="v" id="off">0,00 s</span><button class="txtb" id="plus">Anticipa</button></div></div>
+    <label class="lfm"><div class="l">Chiave API Last.fm <small>Serve per la Radio del brano in ascolto. Gratuita: <a href="https://www.last.fm/api/account/create" target="_blank" rel="noopener">creala qui</a></small></div>
+      <input id="lfmKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="es. 0123456789abcdef0123456789abcdef"></label>
     <div class="set"><div class="l">Traduzione in italiano</div><button class="sw" id="swTr" aria-label="Traduzione"></button></div>
     <div class="set"><div class="l">Mostra riga successiva</div><button class="sw" id="swNext" aria-label="Riga successiva"></button></div>
     <div class="sheetbtns"><button class="btn install hidden">Installa l'app</button><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
@@ -635,6 +640,69 @@ async function transferTo(id, name) {
 /* ---- playlist ---- */
 let playlists = null; const plNames = new Map();
 const LIKED = "liked", LIKED_NAME = "Brani che mi piacciono";
+const RADIO = "radio";
+
+/* ---- Radio del brano in ascolto ----
+   Spotify non dà più accesso ai consigli e alle sue radio alle app nuove (novembre 2024):
+   i brani simili arrivano da Last.fm e vengono cercati su Spotify uno per uno. */
+let radioBusy = false;
+async function lastfmSimilar(tr, key) {
+  const q = new URLSearchParams({ method: "track.getsimilar", artist: tr.artist1, track: cleanTitle(tr.name), api_key: key, format: "json", limit: "60", autocorrect: "1" });
+  const r = await fetch("https://ws.audioscrobbler.com/2.0/?" + q);
+  const j = await r.json().catch(() => ({}));
+  if (j.error) throw new Error(j.error === 10 || j.error === 26 ? "chiave Last.fm non valida" : (j.message || "errore Last.fm"));
+  let list = ((j.similartracks && j.similartracks.track) || []).map(t => ({ name: t.name, artist: (t.artist && t.artist.name) || "" }));
+  if (list.length < 8) { // pochi brani simili: aggiungo i brani più ascoltati degli artisti simili
+    const qa = new URLSearchParams({ method: "artist.getsimilar", artist: tr.artist1, api_key: key, format: "json", limit: "12", autocorrect: "1" });
+    const ja = await (await fetch("https://ws.audioscrobbler.com/2.0/?" + qa)).json().catch(() => ({}));
+    const arts = ((ja.similarartists && ja.similarartists.artist) || []).map(a => a.name).slice(0, 12);
+    for (const a of arts) {
+      const qt = new URLSearchParams({ method: "artist.gettoptracks", artist: a, api_key: key, format: "json", limit: "3" });
+      const jt = await (await fetch("https://ws.audioscrobbler.com/2.0/?" + qt)).json().catch(() => ({}));
+      ((jt.toptracks && jt.toptracks.track) || []).forEach(t => list.push({ name: t.name, artist: a }));
+    }
+  }
+  // massimo 2 brani per artista, per una radio varia
+  const per = {}; return list.filter(t => (per[t.artist.toLowerCase()] = (per[t.artist.toLowerCase()] || 0) + 1) <= 2);
+}
+async function findOnSpotify(t) {
+  const q = 'track:"' + t.name.replace(/"/g, "") + '" artist:"' + t.artist.replace(/"/g, "") + '"';
+  const j = await api("search?type=track&limit=1&q=" + encodeURIComponent(q)).catch(() => null);
+  const x = j && j.tracks && j.tracks.items && j.tracks.items[0];
+  return x ? { uri: x.uri, name: x.name, artist: (x.artists || []).map(a => a.name).join(", "), dur: x.duration_ms || 0 } : null;
+}
+async function startRadio() {
+  closeSheet();
+  if (S.demo) { toast("Nella demo la radio non è disponibile."); return; }
+  if (!hasScopes()) { needLogin(); return; }
+  const tr = S.track;
+  if (!tr || tr.type === "episode") { toast("Avvia prima un brano: la radio parte da quello."); return; }
+  const key = (store.get("lfmkey", "") || "").trim();
+  if (!key) { toast("Per la radio serve una chiave API Last.fm (gratuita).", "Imposta", () => { openSheet("set"); setTimeout(() => $("#lfmKey").focus(), 300); }); return; }
+  if (radioBusy) return; radioBusy = true;
+  toast("Creo la radio di “" + tr.name + "”…");
+  try {
+    const sim = await lastfmSimilar(tr, key);
+    if (!sim.length) { toast("Last.fm non conosce brani simili a questo."); return; }
+    const found = [], seen = new Set([tr.uri]);
+    const todo = sim.slice(0, 40);
+    for (let k = 0; k < todo.length; k += 4) { // 4 ricerche alla volta
+      const res = await Promise.all(todo.slice(k, k + 4).map(findOnSpotify));
+      res.forEach(x => { if (x && !seen.has(x.uri)) { seen.add(x.uri); found.push(x); } });
+      if (found.length >= 30) break;
+    }
+    if (!found.length) { toast("Non ho trovato su Spotify i brani simili."); return; }
+    const name = "Radio · " + tr.name;
+    const list = [{ uri: tr.uri, name: tr.name, artist: tr.artist, dur: tr.dur }].concat(found);
+    plTracks.set(RADIO, list); plNames.set(RADIO, name);
+    await player("PUT", "shuffle?state=false", null, true);
+    S.az = { plUri: RADIO, name, az: null, uris: new Set(list.map(t => t.uri)) };
+    // continua il brano in corso dal punto in cui è, poi i brani simili
+    const ok = await play({ uris: list.map(t => t.uri), offset: { position: 0 }, position_ms: Math.round(rawPos()) });
+    if (ok) { S.shuffle = false; setPlName(name); updateOrder(); toast("Radio pronta: " + found.length + " brani simili"); S.holdUntil = 0; setTimeout(poll, 800); }
+  } catch (e) { toast("Radio non disponibile: " + e.message + "."); }
+  finally { radioBusy = false; }
+}
 function setPlName(n) { $("#plName").textContent = n; }
 function updateContext(ctx, tr) {
   const uri = ctx && ctx.uri;
@@ -675,7 +743,9 @@ function renderPl() {
   const q = $("#plSearch").value.trim().toLowerCase();
   const list = (playlists || []).filter(p => !q || (p.name || "").toLowerCase().includes(q));
   if (!list.length) { $("#plList").innerHTML = '<p class="empty">' + (q ? "Nessuna playlist trovata." : "Non hai ancora playlist.") + "</p>"; return; }
-  $("#plList").innerHTML = list.map(p => {
+  const radioRow = (!q && S.track && S.track.type !== "episode")
+    ? '<button class="pli" data-uri="' + RADIO + '" data-name=""><span class="ph radio">📻</span><div><div class="n">Radio del brano in ascolto</div><div class="o">Brani simili a “' + esc(S.track.name) + "”</div></div></button>" : "";
+  $("#plList").innerHTML = radioRow + list.map(p => {
     const img = (p.images || []).filter(Boolean).slice(-1)[0];
     const n = ((p.items || p.tracks || {}).total);
     const sub = [(p.owner && p.owner.display_name) || "", n != null ? n + " brani" : ""].filter(Boolean).join(" · ");
@@ -707,6 +777,7 @@ async function choosePlaylist(uri, name) {
 const plTracks = new Map(); // uri playlist -> elenco brani, oppure "na" se Spotify non li fornisce
 async function loadTracks(plUri) {
   if (plTracks.has(plUri)) return plTracks.get(plUri);
+  if (plUri === RADIO) return "na";
   const id = plUri.split(":").pop();
   let out = [], path = plUri === LIKED ? "me/tracks?limit=50" : "playlists/" + encodeURIComponent(id) + "/items?limit=100";
   try {
@@ -1199,7 +1270,9 @@ $("#devList").onclick = e => {
 };
 $("#plBtn").onclick = openPlaylists;
 $("#plSearch").oninput = renderPl;
-$("#plList").onclick = e => { const b = e.target.closest(".pli"); if (b) choosePlaylist(b.dataset.uri, b.dataset.name); };
+$("#plList").onclick = e => { const b = e.target.closest(".pli"); if (!b) return; if (b.dataset.uri === RADIO) startRadio(); else choosePlaylist(b.dataset.uri, b.dataset.name); };
+$("#lfmKey").value = store.get("lfmkey", "");
+$("#lfmKey").onchange = $("#lfmKey").oninput = e => store.set("lfmkey", e.target.value.trim());
 $("#prevTr").onclick = () => skipTrack(-1);
 $("#trBtn").onclick = openTracks;
 $("#srBtn").onclick = openSearch;
@@ -1352,7 +1425,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 22:00";
+const APP_VERSION = "27/11/2026 22:10";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
