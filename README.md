@@ -83,6 +83,7 @@ Permessi Spotify richiesti al login (scope):
 | `user-modify-playback-state` | Pausa, play, salti, ordine, cambio dispositivo |
 | `playlist-read-private`, `playlist-read-collaborative` | Elenco playlist e relativi brani |
 | `user-library-read` | "Brani che mi piacciono" |
+| `user-library-modify` | Cuore: aggiungere o togliere un brano dai preferiti |
 
 Browser supportati: Chrome su Android (consigliato, installabile a schermo intero), Safari su iPhone/iPad, Chrome, Edge e Firefox su PC.
 
@@ -177,7 +178,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 - **Impostazioni** (icona a cursori).
 
 **In basso**
-- Titolo e artista del brano.
+- Titolo e artista del brano, con il **cuore** ♡ per aggiungerlo ai *Brani che mi piacciono* (diventa verde ♥ se c'è già; toccalo di nuovo per toglierlo).
 - Barra di avanzamento: toccala o trascinala per spostarti nel brano.
 - Pulsanti, da sinistra: **⏮ brano**, **⏪ strofa**, **play/pausa**, **strofa ⏩**, **brano ⏭**.
 

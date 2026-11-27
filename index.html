@@ -104,7 +104,16 @@ body.pinned #mini{display:none}
 #hud .top{top:0;display:flex;align-items:center;gap:12px;
   padding:calc(10px + var(--sat)) calc(12px + var(--sar)) 28px calc(16px + var(--sal));
   background:linear-gradient(rgba(8,9,12,.95) 40%,rgba(8,9,12,0))}
-#trk{max-width:640px;margin:0 auto 4px;text-align:center;line-height:1.25}
+#trkRow{display:flex;align-items:center;gap:8px;max-width:640px;margin:0 auto 4px}
+#trkRow::before{content:"";width:40px;flex:none}
+#trk{flex:1;min-width:0;text-align:center;line-height:1.25}
+#like{flex:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--fg)}
+#like:active{background:rgba(255,255,255,.14)}
+#like.on{color:var(--acc)}
+#like.on svg path{fill:currentColor}
+#like.pop svg{animation:likepop .35s ease-out}
+@keyframes likepop{40%{transform:scale(1.3)}100%{transform:none}}
+#like.hidden{visibility:hidden;display:flex!important}
 #trk .t{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #trk .a{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pill{display:flex;align-items:center;gap:8px;min-width:0;max-width:calc(100% - 60px);background:rgba(255,255,255,.1);
@@ -317,7 +326,12 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
       </button>
     </div>
     <div class="bot">
-      <div id="trk"><div class="t"></div><div class="a"></div></div>
+      <div id="trkRow">
+        <div id="trk"><div class="t"></div><div class="a"></div></div>
+        <button id="like" class="hidden" aria-label="Aggiungi ai brani che ti piacciono">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.3 4.5 6.8 4.5c2.1 0 3.6 1.2 5.2 3 1.6-1.8 3.1-3 5.2-3 3.5 0 5.4 3.5 4.1 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>
+        </button>
+      </div>
       <div class="prog"><span id="tNow">0:00</span>
         <div id="bar"><div class="rail"><div class="fill"></div><div class="knob"></div></div></div>
         <span id="tDur">0:00</span></div>
@@ -392,7 +406,7 @@ const store = {
   del(k) { try { localStorage.removeItem("kk_" + k); } catch (e) {} }
 };
 const REDIRECT = location.origin + location.pathname;
-const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read";
+const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read user-library-modify";
 const fmt = ms => { ms = Math.max(0, ms || 0); const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 /* ================= OAuth PKCE ================= */
@@ -508,7 +522,7 @@ function onState(j, tMid) {
 }
 function setNothing() {
   if (S.track === null && !$("#msg").classList.contains("hidden")) return;
-  S.track = null; S.playing = false; setTrackInfo("", ""); setSrc(""); updatePlayIcon();
+  S.track = null; S.playing = false; setTrackInfo("", ""); setSrc(""); updatePlayIcon(); setLikeUI(null);
   S.ctxUri = null; S.ctxType = null; setPlName(LIKED_NAME); updateOrder();
   showMsg("Nessun brano in riproduzione", "Premi play per ascoltare i brani che ti piacciono, oppure scegli una playlist.");
 }
@@ -1130,9 +1144,41 @@ function trOf(t) {
 }
 
 /* ================= Cambio brano ================= */
+/* ---- cuore: aggiungi/togli dai brani che ti piacciono ---- */
+function setLikeUI(state) { // true, false oppure null (sconosciuto / non disponibile)
+  const b = $("#like"); S.liked = state;
+  b.classList.toggle("hidden", state === null); b.classList.toggle("on", state === true);
+  b.setAttribute("aria-label", state ? "Togli dai brani che ti piacciono" : "Aggiungi ai brani che ti piacciono");
+}
+async function checkLiked() {
+  const tr = S.track;
+  if (S.demo || !tr || tr.type === "episode" || !/^spotify:track:/.test(tr.uri || "")) return setLikeUI(null);
+  if (!hasScopes()) return setLikeUI(false);
+  try {
+    const j = await api("me/library/contains?uris=" + encodeURIComponent(tr.uri));
+    if (S.track && S.track.uri === tr.uri) setLikeUI(Array.isArray(j) ? !!j[0] : false);
+  } catch (e) { if (S.track && S.track.uri === tr.uri) setLikeUI(false); }
+}
+async function toggleLike() {
+  showHud();
+  const tr = S.track;
+  if (S.demo) { toast("Nella demo non puoi salvare brani."); return; }
+  if (!tr || !tr.uri) return;
+  if (!hasScopes()) { needLogin(); return; }
+  const add = !S.liked;
+  setLikeUI(add); if (add) { const b = $("#like"); b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
+  try {
+    const tok = await accessToken();
+    const r = await fetch("https://api.spotify.com/v1/me/library?uris=" + encodeURIComponent(tr.uri), { method: add ? "PUT" : "DELETE", headers: { Authorization: "Bearer " + tok } });
+    if (!r.ok) throw new Error(r.status);
+    toast(add ? "Aggiunto ai brani che ti piacciono" : "Tolto dai brani che ti piacciono");
+    plTracks.delete(LIKED); playlists = null; // l'elenco dei preferiti verrà riletto
+  } catch (e) { setLikeUI(!add); toast("Non riesco a " + (add ? "salvare" : "togliere") + " il brano (" + e.message + ")."); }
+}
+
 async function newTrack() {
   const tr = S.track;
-  setTrackInfo(tr.name, tr.artist);
+  setTrackInfo(tr.name, tr.artist); checkLiked();
   setSrc(""); S.trans = null;
   if (tr.type === "episode") return showMsg(tr.name, "Podcast: nessun testo");
   showMsg("♪", "Cerco il testo…");
@@ -1341,6 +1387,7 @@ $("#lfmKey").value = store.get("lfmkey", "");
 $("#lfmKey").onchange = $("#lfmKey").oninput = e => store.set("lfmkey", e.target.value.trim());
 $("#prevTr").onclick = () => skipTrack(-1);
 $("#trBtn").onclick = openTracks;
+$("#like").onclick = toggleLike;
 $("#srBtn").onclick = openSearch;
 $("#srClose").onclick = closeSheet;
 $("#srInput").oninput = () => { clearTimeout(srTimer); srTimer = setTimeout(() => runSearch(false), 350); };
@@ -1491,7 +1538,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 22:30";
+const APP_VERSION = "27/11/2026 22:40";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
