@@ -1,6 +1,6 @@
 // Service worker: rende l'app installabile e la apre anche con rete lenta.
 // Solo i file dell'app vengono messi in cache; Spotify, LRCLIB e Google passano sempre dalla rete.
-const CACHE = "karaoke-v23";
+const CACHE = "karaoke-v24";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {

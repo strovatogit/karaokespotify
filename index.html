@@ -225,6 +225,14 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .plrow .pli{flex:1;min-width:0}
 .plrow .save{flex:none;font-size:13px;font-weight:700;color:#000;background:var(--acc);border-radius:999px;padding:8px 14px;margin-left:6px}
 .plrow .save:active{filter:brightness(.9)}
+.swrow{position:relative;overflow:hidden;border-radius:12px}
+.swrow .del{position:absolute;top:0;right:0;bottom:0;width:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:22px;
+  background:#e5484d;color:#fff;font-weight:700;font-size:15px;border-radius:12px;opacity:0;transition:opacity .15s}
+.swrow.open .del,.swrow.drag .del{opacity:1}
+.swrow.far .del{background:#c91d22}
+.swrow .pli{position:relative;background:var(--panel);touch-action:pan-y;transition:transform .2s ease}
+.swrow.drag .pli{transition:none}
+#dlg .danger{background:#e5484d;color:#fff}
 #dlgBg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px}
 #dlg{width:min(100%,420px);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
 #dlg h3{margin:0 0 6px;font-size:18px}
@@ -371,7 +379,7 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
   <div id="toast" class="hidden"><span></span><button></button></div>
 
   <div id="dlgBg" class="hidden"><div id="dlg" role="dialog" aria-modal="true">
-    <h3>Salva la radio come playlist</h3>
+    <h3 id="dlgTitle">Salva la radio come playlist</h3>
     <p id="dlgInfo"></p>
     <input id="dlgInput" maxlength="100" autocomplete="off">
     <div class="row"><button class="btn" id="dlgCancel">Annulla</button><button class="btn primary" id="dlgOk">Salva</button></div>
@@ -428,7 +436,7 @@ const store = {
   del(k) { try { localStorage.removeItem("kk_" + k); } catch (e) {} }
 };
 const REDIRECT = location.origin + location.pathname;
-const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read user-library-modify playlist-modify-private";
+const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read user-library-modify playlist-modify-private playlist-modify-public";
 const fmt = ms => { ms = Math.max(0, ms || 0); const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 /* ================= OAuth PKCE ================= */
@@ -751,17 +759,23 @@ async function findOnSpotify(t) {
   return x ? { uri: x.uri, name: x.name, artist: (x.artists || []).map(a => a.name).join(", "), dur: x.duration_ms || 0 } : null;
 }
 /* ---- salvataggio della radio come playlist Spotify ---- */
-function askRadioName() {
+// finestra di dialogo: con input restituisce il testo (o null), senza input restituisce true/false
+function dialog(o) {
   return new Promise(res => {
-    $("#dlgInfo").textContent = S.radio.uris.length + " brani. Puoi cambiare il nome prima di salvarla tra le tue playlist.";
-    $("#dlgInput").value = S.radio.name; $("#dlgBg").classList.remove("hidden");
-    setTimeout(() => { try { $("#dlgInput").focus(); $("#dlgInput").select(); } catch (e) {} }, 100);
-    const done = v => { $("#dlgBg").classList.add("hidden"); $("#dlgOk").onclick = $("#dlgCancel").onclick = $("#dlgInput").onkeydown = $("#dlgBg").onclick = null; res(v); };
-    $("#dlgOk").onclick = () => { const v = $("#dlgInput").value.trim(); if (!v) { $("#dlgInput").focus(); return; } done(v); };
-    $("#dlgCancel").onclick = () => done(null);
-    $("#dlgBg").onclick = e => { if (e.target.id === "dlgBg") done(null); };
-    $("#dlgInput").onkeydown = e => { if (e.key === "Enter") $("#dlgOk").onclick(); else if (e.key === "Escape") done(null); };
+    $("#dlgTitle").textContent = o.title; $("#dlgInfo").textContent = o.text || "";
+    const inp = $("#dlgInput"); inp.classList.toggle("hidden", o.value === undefined); inp.value = o.value || "";
+    $("#dlgOk").textContent = o.ok || "OK"; $("#dlgOk").className = "btn " + (o.danger ? "danger" : "primary");
+    $("#dlgBg").classList.remove("hidden");
+    if (o.value !== undefined) setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 100);
+    const done = v => { $("#dlgBg").classList.add("hidden"); $("#dlgOk").onclick = $("#dlgCancel").onclick = inp.onkeydown = $("#dlgBg").onclick = null; res(v); };
+    $("#dlgOk").onclick = () => { if (o.value === undefined) return done(true); const v = inp.value.trim(); if (!v) { inp.focus(); return; } done(v); };
+    $("#dlgCancel").onclick = () => done(o.value === undefined ? false : null);
+    $("#dlgBg").onclick = e => { if (e.target.id === "dlgBg") $("#dlgCancel").onclick(); };
+    inp.onkeydown = e => { if (e.key === "Enter") $("#dlgOk").onclick(); else if (e.key === "Escape") $("#dlgCancel").onclick(); };
   });
+}
+function askRadioName() {
+  return dialog({ title: "Salva la radio come playlist", text: S.radio.uris.length + " brani. Puoi cambiare il nome prima di salvarla tra le tue playlist.", value: S.radio.name, ok: "Salva" });
 }
 async function saveRadio() {
   if (!S.radio || S.radio.saved) return;
@@ -840,6 +854,7 @@ function updateContext(ctx, tr) {
 }
 async function loadPlaylists() {
   if (playlists) return playlists;
+  if (!S.meId) { try { const me = await api("me"); S.meId = me && me.id; } catch (e) {} }
   let out = [], path = "me/playlists?limit=50";
   for (let n = 0; n < 8 && path; n++) {
     const j = await api(path);
@@ -873,9 +888,11 @@ function renderPl() {
     const img = (p.images || []).filter(Boolean).slice(-1)[0];
     const n = ((p.items || p.tracks || {}).total);
     const sub = [(p.owner && p.owner.display_name) || "", n != null ? n + " brani" : ""].filter(Boolean).join(" · ");
-    return '<button class="pli' + (p.uri === S.ctxUri || (azActive() && p.uri === S.az.plUri) ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
+    const btn = '<button class="pli' + (p.uri === S.ctxUri || (azActive() && p.uri === S.az.plUri) ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
       + (p.liked ? '<span class="ph liked">♥</span>' : img ? '<img loading="lazy" alt="" src="' + esc(img.url) + '">' : '<span class="ph">♪</span>')
       + '<div><div class="n">' + esc(p.name) + '</div><div class="o">' + esc(sub) + "</div></div></button>";
+    // le playlist vere si possono eliminare scorrendo verso sinistra
+    return p.liked ? btn : '<div class="swrow" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '" data-own="' + (p.owner && p.owner.id && S.meId && p.owner.id === S.meId ? 1 : 0) + '"><button class="del" tabindex="-1">Elimina</button>' + btn + "</div>";
   }).join("") + addRow;
 }
 async function openPlaylists() {
@@ -886,6 +903,57 @@ async function openPlaylists() {
   try { await loadPlaylists(); renderPl(); }
   catch (e) { $("#plList").innerHTML = '<p class="empty">Impossibile caricare le playlist (' + esc(e.message) + ").</p>"; }
 }
+/* ---- scorrimento a sinistra su una playlist: "Elimina", e più a fondo avvia l'eliminazione ---- */
+let sw = null, swJustDragged = false;
+function closeSwipes(except) { document.querySelectorAll(".swrow.open").forEach(r => { if (r !== except) { r.classList.remove("open"); r.querySelector(".pli").style.transform = ""; } }); }
+(function () {
+  const list = $("#plList");
+  list.addEventListener("pointerdown", e => {
+    const row = e.target.closest(".swrow"); if (!row || e.target.closest(".del")) return;
+    sw = { row, x: e.clientX, y: e.clientY, base: row.classList.contains("open") ? -96 : 0, dx: 0, active: false, id: e.pointerId };
+  });
+  list.addEventListener("pointermove", e => {
+    if (!sw || e.pointerId !== sw.id) return;
+    const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+    if (!sw.active) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { sw = null; return; } // scorrimento verticale dell'elenco
+      if (Math.abs(dx) < 8) return;
+      sw.active = true; closeSwipes(sw.row); sw.row.classList.add("drag");
+      try { sw.row.setPointerCapture(e.pointerId); } catch (er) {}
+    }
+    sw.dx = Math.min(0, sw.base + dx);
+    sw.row.querySelector(".pli").style.transform = "translateX(" + sw.dx + "px)";
+    sw.row.classList.toggle("far", -sw.dx > sw.row.offsetWidth * 0.6);
+  });
+  const end = e => {
+    if (!sw || e.pointerId !== sw.id) return;
+    const { row, dx, active } = sw; sw = null;
+    if (!active) return;
+    swJustDragged = true; setTimeout(() => { swJustDragged = false; }, 50);
+    row.classList.remove("drag", "far");
+    const pli = row.querySelector(".pli");
+    if (-dx > row.offsetWidth * 0.6) { pli.style.transform = "translateX(-96px)"; row.classList.add("open"); deletePlaylist(row); }
+    else if (-dx > 60) { pli.style.transform = "translateX(-96px)"; row.classList.add("open"); }
+    else { pli.style.transform = ""; row.classList.remove("open"); }
+  };
+  list.addEventListener("pointerup", end); list.addEventListener("pointercancel", end);
+})();
+async function deletePlaylist(row) {
+  const uri = row.dataset.uri, name = row.dataset.name, own = row.dataset.own === "1";
+  const ok = await dialog({ title: "Eliminare la playlist?", danger: true, ok: "Elimina",
+    text: "“" + name + "” verrà " + (own ? "eliminata" : "tolta") + " dalla tua libreria Spotify" + (own ? "." : ". La playlist resta disponibile per chi l'ha creata.") });
+  if (!ok) { closeSwipes(); return; }
+  try {
+    const tok = await accessToken();
+    const r = await fetch("https://api.spotify.com/v1/me/library?uris=" + encodeURIComponent(uri), { method: "DELETE", headers: { Authorization: "Bearer " + tok } });
+    if (!r.ok) throw new Error(r.status);
+    if (playlists) playlists = playlists.filter(p => p.uri !== uri);
+    row.style.transition = "opacity .25s"; row.style.opacity = "0";
+    setTimeout(renderPl, 250);
+    toast("Playlist “" + name + "” eliminata");
+  } catch (e) { closeSwipes(); toast("Non riesco a eliminare la playlist (" + e.message + ")."); }
+}
+
 async function choosePlaylist(uri, name) {
   closeSheet(); setPlName(name);
   toast("Avvio “" + name + "”…");
@@ -1435,6 +1503,9 @@ $("#devList").onclick = e => {
 $("#plBtn").onclick = openPlaylists;
 $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => {
+  if (swJustDragged) return;
+  const del = e.target.closest(".del"); if (del) { deletePlaylist(del.closest(".swrow")); return; }
+  if (document.querySelector(".swrow.open")) { closeSwipes(); return; }
   if (e.target.closest("#saveRadio")) { saveRadio(); return; }
   const rm = e.target.closest(".rm");
   if (rm) { store.set("custompl", customPl().filter(p => p.uri !== rm.dataset.rm)); renderPl(); return; }
@@ -1601,7 +1672,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 22:55";
+const APP_VERSION = "27/11/2026 23:05";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {

@@ -84,7 +84,7 @@ Permessi Spotify richiesti al login (scope):
 | `playlist-read-private`, `playlist-read-collaborative` | Elenco playlist e relativi brani |
 | `user-library-read` | "Brani che mi piacciono" |
 | `user-library-modify` | Cuore: aggiungere o togliere un brano dai preferiti |
-| `playlist-modify-private` | Salvare la radio come playlist |
+| `playlist-modify-private`, `playlist-modify-public` | Salvare la radio come playlist, eliminare playlist |
 
 Browser supportati: Chrome su Android (consigliato, installabile a schermo intero), Safari su iPhone/iPad, Chrome, Edge e Firefox su PC.
 
@@ -204,6 +204,13 @@ Un altro doppio tocco rimette la barra a comparsa. La scelta resta salvata.
 <img src="docs/07-playlist-t4.png" width="240" align="right" alt="Scelta della playlist">
 
 Tocca il nome della playlist in alto per vedere tutte le tue playlist, con ricerca. Toccandone una, parte subito su Spotify.
+
+**Eliminare una playlist:** scorri il suo nome verso sinistra.
+
+- **Scorrimento breve:** compare il pulsante rosso **Elimina**, da toccare.
+- **Scorrimento fino in fondo:** parte subito l'eliminazione.
+- In entrambi i casi un popup chiede conferma.
+- Le tue playlist vengono eliminate. Quelle create da altri vengono solo tolte dalla tua libreria.
 
 **Brani che mi piacciono** è sempre nell'elenco ed è la **playlist predefinita**. Se non sta suonando niente, play fa partire quelli.
 
