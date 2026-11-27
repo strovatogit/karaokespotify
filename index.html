@@ -1285,7 +1285,7 @@ async function ensureTranslation() {
   }
   if (!S.track || S.track.id !== id) return;
   if (key !== id + "|" + trLang()) return; // lingua cambiata nel frattempo
-  S.trans = res === "same" ? null : res;
+  S.trans = res === "same" ? null : res; S.songFit = null; songFitKey = "";
   $("#src").textContent = srcBase + (res === "same" ? " · brano già in " + langName(trLang()).toLowerCase() : " · Traduzione: Google (" + langName(trLang()).toLowerCase() + ")");
   if (S.lines) S.idx = -2; else if (S.plain) renderPlain();
 }
@@ -1365,7 +1365,7 @@ function renderPlain() {
     return '<div class="pl">' + (esc(l) || "&nbsp;") + (tr ? '<span class="tr">' + esc(tr) + "</span>" : "") + "</div>";
   }).join("");
 }
-function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; S.stanzas = buildStanzas(L); setMode("lines"); }
+function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; S.songFit = null; songFitKey = ""; S.stanzas = buildStanzas(L); setMode("lines"); }
 
 function lineText(i) { return (!S.lines || i < 0 || i >= S.lines.length) ? "" : (S.lines[i].text || "♪"); }
 function setLine(sel, t) { $(sel).firstElementChild.textContent = t; }
@@ -1415,26 +1415,63 @@ function frame() {
 }
 
 /* Testo il più grande possibile: ricerca binaria della dimensione che riempie il riquadro */
-function fitBox(box) {
-  const inner = box.firstElementChild, W = box.clientWidth, H = box.clientHeight;
-  if (!inner || !W || !H || !inner.textContent.trim()) return;
-  // le righe precedente/successiva restano più piccole della riga corrente
-  let lo = 8, hi = Math.max(9, Math.floor(Math.min(H, sizeCap() * (box.id === "cur" ? 1 : 0.6))));
+/* ===== Scala delle grandezze =====
+   Max (10): ogni riga riempie il suo spazio.
+   1–9: le righe del brano hanno tutte la stessa grandezza, calcolata in modo che ci stia il 90% delle righe
+   ("misura del brano"; le poche righe più lunghe si rimpiccioliscono quanto serve) e moltiplicata per un fattore: 5 = misura del brano, ogni livello ±11%.
+   Sopra il 5 le righe troppo lunghe si fermano alla grandezza massima che entra nello schermo. */
+const levelFactor = L => 0.55 + 0.1125 * (Math.min(Math.max(L, 1), 13) - 1); // 1 → 0,55 · 5 → 1 · 9 → 1,45
+function maxFit(inner, W, H, cap) {
+  let lo = 8, hi = Math.max(9, Math.floor(Math.min(H, cap)));
   while (hi - lo > 1) {
     const m = (lo + hi) >> 1; inner.style.fontSize = m + "px";
     if (inner.scrollWidth <= W + 0.5 && inner.offsetHeight <= H) lo = m; else hi = m;
   }
-  inner.style.fontSize = lo + "px";
+  return lo;
 }
-function fitAll() { ["#prev", "#cur", "#next"].forEach(s => fitBox($(s))); }
-// testo non sincronizzato: stessa scala della riga di karaoke, ma 3 livelli più grande di quello impostato
+// misura del brano: grandezza con cui il 90% delle righe (con la traduzione) entra nel riquadro centrale
+let songFitKey = "";
+function computeSongFit() {
+  const box = $("#cur"), W = box.clientWidth, H = box.clientHeight;
+  if (!S.lines || !W || !H) return;
+  const showTr = !document.body.classList.contains("notr") && S.trans;
+  const key = W + "x" + H + "|" + S.lines.length + "|" + (S.lines[0] && S.lines[0].t) + "|" + (showTr ? S.trans.size : 0);
+  if (key === songFitKey && S.songFit) return;
+  songFitKey = key;
+  let m = $("#measure");
+  if (!m) { m = document.createElement("span"); m.id = "measure"; m.className = "txt"; m.setAttribute("aria-hidden", "true");
+    m.style.cssText = "position:absolute;left:0;top:0;visibility:hidden;pointer-events:none"; box.appendChild(m); }
+  m.style.width = W + "px";
+  const fits = [], seen = new Set();
+  for (const l of S.lines) {
+    if (!l.text || seen.has(l.text)) continue; seen.add(l.text);
+    const tr = showTr ? trOf(l.text) : "";
+    m.innerHTML = esc(l.text) + (tr ? '<span class="tr">' + esc(tr) + "</span>" : "");
+    fits.push(maxFit(m, W, H, H));
+  }
+  m.innerHTML = "";
+  // si usa la grandezza con cui entra il 90% delle righe: poche righe lunghissime non rimpiccioliscono tutto il brano
+  fits.sort((x, y) => x - y);
+  S.songFit = fits.length ? fits[Math.floor(fits.length * 0.1)] : null;
+}
+function fitBox(box) {
+  const inner = box.firstElementChild, W = box.clientWidth, H = box.clientHeight;
+  if (!inner || !W || !H || !inner.textContent.trim()) return 0;
+  let cap = Infinity;
+  if (box.id === "cur") { if (S.size < 10 && S.songFit) cap = S.songFit * levelFactor(S.size); }
+  else { const c = parseFloat($("#cur .txt").style.fontSize) || 0; if (c) cap = c * 0.6; } // righe vicine: 60% della riga corrente
+  const px = maxFit(inner, W, H, cap);
+  inner.style.fontSize = px + "px";
+  return px;
+}
+function fitAll() { computeSongFit(); ["#cur", "#prev", "#next"].forEach(s => fitBox($(s))); }
+// testo non sincronizzato: 3 livelli più grande di quello impostato (con 5 → come 8)
 function updatePlainSize() {
   const md = Math.min(innerWidth, innerHeight), L = Math.min(10, S.size) + 3;
-  const px = md * (0.035 + 0.03 * L) * 0.6;
+  const px = md * 0.164 * levelFactor(L) / levelFactor(8); // a 8 circa 64 px su un telefono
   document.documentElement.style.setProperty("--plainpx", Math.max(14, Math.round(px)) + "px");
 }
 addEventListener("resize", () => updatePlainSize());
-function sizeCap() { return S.size >= 10 ? Infinity : Math.min(innerWidth, innerHeight) * (0.035 + 0.03 * S.size); }
 function sizeLabel() { return S.size >= 10 ? "Max" : Math.round(S.size) + "/10"; }
 function setSize(n) {
   S.size = Math.max(1, Math.min(10, n)); store.set("size", S.size);
@@ -1604,8 +1641,8 @@ function effectiveLevel() {
   if (S.size < 10) return S.size;
   // da "Max" si parte dalla grandezza che il testo ha davvero adesso, così il pizzico risponde subito
   const box = S.lines ? $("#cur .txt") : null, px = box ? parseFloat(box.style.fontSize) : 0;
-  if (!px) return 10;
-  return Math.max(1, Math.min(10, (px / Math.min(innerWidth, innerHeight) - 0.035) / 0.03));
+  if (!px || !S.songFit) return 10;
+  return Math.max(1, Math.min(10, 1 + (px / S.songFit - 0.55) / 0.1125));
 }
 function showZoomTip() { const t = $("#zoomTip"); t.textContent = "Testo " + sizeLabel(); t.classList.add("show"); clearTimeout(tipTimer); tipTimer = setTimeout(() => t.classList.remove("show"), 700); }
 ["#stage", "#plain", "#msg"].forEach(sel => {
@@ -1710,7 +1747,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 23:25";
+const APP_VERSION = "27/11/2026 23:40";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
