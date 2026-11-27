@@ -8,7 +8,7 @@
 ![Nessuna dipendenza](https://img.shields.io/badge/dipendenze-nessuna-brightgreen)
 ![Licenza MIT](https://img.shields.io/badge/licenza-MIT-blue)
 
-Web app (PWA) che mostra **in stile karaoke il testo sincronizzato** del brano che stai ascoltando su Spotify, con la **traduzione in italiano** sotto ogni riga. Dall'app controlli anche la riproduzione: pausa, salti tra strofe e brani, playlist, ordine e dispositivo.
+Web app (PWA) che mostra **in stile karaoke il testo sincronizzato** del brano che stai ascoltando su Spotify, con la **traduzione** sotto ogni riga, in italiano o in una delle oltre 130 lingue di Google Traduttore. Dall'app controlli anche la riproduzione: pausa, salti tra strofe e brani, playlist, ordine e dispositivo.
 
 > 🇬🇧 **English:** *Karaoke Spotify* is a free, open-source **karaoke web app for Spotify**: it shows **real-time synced lyrics** (LRC, from LRCLIB) of the song currently playing on Spotify, with an **Italian translation** under each line, big full-screen text in portrait and landscape, and playback controls (play/pause, skip verse or track, playlists, Liked Songs, sort by title/artist, shuffle, Spotify Connect device picker). Installable **PWA** for Android and iPhone, single HTML file, no server, no build. [Jump to installation](#installazione).
 
@@ -72,7 +72,7 @@ Servizi esterni usati:
 | [Spotify Web API](https://developer.spotify.com/documentation/web-api) | Brano in corso, comandi di riproduzione, playlist, libreria, dispositivi | Un'app nella [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) e account **Premium** |
 | [LRCLIB](https://lrclib.net) | Testi sincronizzati | Nessuno, è gratuito e non richiede chiavi |
 | [Last.fm API](https://www.last.fm/api) (facoltativa) | Brani simili per la Radio del brano in ascolto | Una chiave API gratuita |
-| Google Translate (endpoint pubblico `translate.googleapis.com`) | Traduzione in italiano | Nessuno. È un servizio gratuito **non ufficiale**, quindi può smettere di funzionare |
+| Google Translate (endpoint pubblico `translate.googleapis.com`) | Traduzione nella lingua scelta | Nessuno. È un servizio gratuito **non ufficiale**, quindi può smettere di funzionare |
 | Hosting statico in **HTTPS** (es. GitHub Pages) | Pubblicare l'app | Spotify accetta il ritorno dal login solo su `https://`, oppure su `http://127.0.0.1` per i test |
 
 Permessi Spotify richiesti al login (scope):
@@ -147,7 +147,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 <img src="docs/02-karaoke-verticale-t4.png" width="240" align="right" alt="Karaoke in verticale">
 
 - **Riga corrente:** è al centro, **grande quanto possibile**. Le parole si colorano di verde mentre vengono cantate.
-- **Traduzione:** sotto la riga, in corsivo.
+- **Traduzione:** sotto la riga, in corsivo, nella lingua scelta nelle impostazioni.
 - **Righe vicine:** in grigio, sopra la precedente e sotto la successiva.
 - **Orientamento:** in orizzontale la riga corrente occupa quasi tutto lo schermo.
 - **Sezioni strumentali:** al posto del testo compare **♪**.
@@ -261,7 +261,8 @@ Cambiando ordine, il brano in corso continua dal punto in cui eri. La scelta val
   - Se Spotify non è aperto sul telefono, un pulsante **Apri Spotify** lo apre.
 - **Grandezza testo:** − / + da 1/10 a **Max**, come il pizzico.
 - **Sincronia:** *Ritarda* / *Anticipa* a passi di 0,25 s, se il testo arriva presto o tardi.
-- **Traduzione in italiano** e **Mostra riga successiva:** interruttori per attivarle o disattivarle.
+- **Traduzione** e **Mostra riga successiva:** interruttori per attivarle o disattivarle.
+- **Lingua della traduzione:** tutte le lingue di Google Traduttore (oltre 130), con i nomi in italiano. L'italiano è la lingua predefinita. Se il brano è già nella lingua scelta, la traduzione non compare.
 - **Installa l'app**, **Schermo intero**, **Esci** (disconnette l'account Spotify).
 - In fondo: fonte dei testi e della traduzione, e **numero di versione**.
 

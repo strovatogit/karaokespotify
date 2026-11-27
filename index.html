@@ -245,6 +245,7 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 #linkBox .row{margin-top:0}
 .pli .ph.radio{background:linear-gradient(135deg,#ff7a59,#b5179e);color:#fff;font-size:24px}
 .lfm{display:block;padding:13px 0;border-top:1px solid var(--line)}
+.lfm small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 .lfm input{width:100%;margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:15px;font-family:ui-monospace,Menlo,Consolas,monospace}
 .pli .ph.liked{background:linear-gradient(135deg,#1ed760,#0b6b34);color:#fff}
 .empty{color:var(--muted);text-align:center;padding:30px 10px}
@@ -261,6 +262,10 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .sw.on{background:var(--acc)}
 .sw.on::after{transform:translateX(20px)}
 .sheetbtns{display:flex;gap:10px;margin-top:12px}
+#trLang{max-width:58%;padding:9px 30px 9px 12px;border-radius:10px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:15px;
+  appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center}
+body.notr #trLangRow{opacity:.45}
 .devhead{display:flex;align-items:center;justify-content:space-between;padding-top:13px;border-top:1px solid var(--line)}
 .devhead .l{font-size:15px}
 .devhead button{font-size:13px;font-weight:600;color:var(--acc);padding:6px 4px}
@@ -289,7 +294,7 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 <!-- ======= Configurazione ======= -->
 <section id="setup" class="hidden"><div class="card">
   <h1>🎤 Karaoke per Spotify</h1>
-  <p>Mostra il testo sincronizzato del brano che stai ascoltando su Spotify (telefono, PC o casse), con la traduzione in italiano. Testi da LRCLIB.</p>
+  <p>Mostra il testo sincronizzato del brano che stai ascoltando su Spotify (telefono, PC o casse), con la traduzione nella lingua che preferisci. Testi da LRCLIB.</p>
   <ol>
     <li>Apri <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> e crea un'app, spuntando <i>Web API</i>.</li>
     <li>In <i>Redirect URIs</i> aggiungi esattamente questo indirizzo:</li>
@@ -396,7 +401,8 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
       <div class="step"><button class="txtb" id="minus">Ritarda</button><span class="v" id="off">0,00 s</span><button class="txtb" id="plus">Anticipa</button></div></div>
     <label class="lfm"><div class="l">Chiave API Last.fm <small>Serve per la Radio del brano in ascolto. Gratuita: <a href="https://www.last.fm/api/account/create" target="_blank" rel="noopener">creala qui</a></small></div>
       <input id="lfmKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="es. 0123456789abcdef0123456789abcdef"></label>
-    <div class="set"><div class="l">Traduzione in italiano</div><button class="sw" id="swTr" aria-label="Traduzione"></button></div>
+    <div class="set"><div class="l">Traduzione</div><button class="sw" id="swTr" aria-label="Traduzione"></button></div>
+    <div class="set" id="trLangRow"><div class="l">Lingua della traduzione</div><select id="trLang" aria-label="Lingua della traduzione"></select></div>
     <div class="set"><div class="l">Mostra riga successiva</div><button class="sw" id="swNext" aria-label="Riga successiva"></button></div>
     <div class="sheetbtns"><button class="btn install hidden">Installa l'app</button><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
     <div id="src"></div>
@@ -1226,10 +1232,26 @@ function parseLRC(s) {
   return out.sort((a, b) => a.t - b.t);
 }
 
-/* ================= Traduzione in italiano ================= */
-const trCache = new Map(); // id brano -> Map(testo -> traduzione) oppure "it"
+/* ================= Traduzione ================= */
+// lingue di Google Traduttore (codici usati dal servizio); i nomi vengono dal browser, in italiano
+const TR_LANGS = ("af sq am ar hy as ay az bm eu be bn bho bs bg ca ceb ny zh-CN zh-TW co hr cs da dv doi nl en eo et ee tl fi fr fy gl ka de el gn gu ht ha haw iw hi hmn hu is ig ilo id ga it ja jw kn kk km rw gom ko kri ku ckb ky lo la lv ln lt lg lb mk mai mg ms ml mt mi mr mni-Mtei lus mn my ne no or om ps fa pl pt pa qu ro ru sm sa gd nso sr st sn sd si sk sl so es su sw sv tg ta tt te th ti ts tr tk ak uk ur ug uz vi cy xh yi yo zu").split(" ");
+const LANG_ALIAS = { iw: "he", jw: "jv", "mni-Mtei": "mni", gom: "kok", "zh-CN": "zh-Hans", "zh-TW": "zh-Hant" };
+function langName(code) {
+  let n = code;
+  try { n = new Intl.DisplayNames(["it"], { type: "language" }).of(LANG_ALIAS[code] || code) || code; } catch (e) {}
+  if (code === "zh-CN") n = "cinese semplificato"; if (code === "zh-TW") n = "cinese tradizionale";
+  return n.charAt(0).toUpperCase() + n.slice(1);
+}
+const trLang = () => store.get("trlang", "it");
+function fillLangSelect() {
+  const sel = $("#trLang"), cur = trLang();
+  sel.innerHTML = TR_LANGS.map(c => [c, langName(c)]).sort((a, b) => a[1].localeCompare(b[1], "it"))
+    .map(([c, n]) => '<option value="' + c + '"' + (c === cur ? " selected" : "") + ">" + esc(n) + "</option>").join("");
+}
+const baseLang = c => (c || "").toLowerCase().split("-")[0].replace("iw", "he").replace("jw", "jv");
+const trCache = new Map(); // id brano + lingua -> Map(testo -> traduzione) oppure "same" se il brano è già in quella lingua
 async function gtx(text) {
-  const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=it&dt=t&q=" + encodeURIComponent(text));
+  const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + encodeURIComponent(trLang()) + "&dt=t&q=" + encodeURIComponent(text));
   if (!r.ok) throw new Error("translate " + r.status);
   const j = await r.json();
   return { text: (j[0] || []).map(x => (x && x[0]) || "").join(""), lang: j[2] };
@@ -1241,7 +1263,7 @@ async function translateAll(texts) {
   if (cur.length) chunks.push(cur);
   for (const ch of chunks) {
     const res = await gtx(ch.join("\n"));
-    if (!lang) { lang = res.lang; if (lang === "it") return "it"; }
+    if (!lang) { lang = res.lang; if (baseLang(lang) === baseLang(trLang())) return "same"; }
     let out = res.text.split("\n").map(s => s.trim());
     if (out.length !== ch.length) out = await Promise.all(ch.map(t => gtx(t).then(r => r.text.trim(), () => "")));
     ch.forEach((t, k) => { if (out[k]) map.set(t, out[k]); });
@@ -1254,15 +1276,17 @@ async function ensureTranslation() {
   const id = S.track.id;
   const texts = S.lines ? S.lines.map(l => l.text) : S.plain ? S.plain.split(/\r?\n/) : null;
   if (!texts) return;
-  let res = trCache.get(id);
+  const key = id + "|" + trLang();
+  let res = trCache.get(key);
   if (!res) {
     const uniq = [...new Set(texts.map(t => t.trim()).filter(t => t && /\p{L}/u.test(t)))];
-    try { res = await translateAll(uniq); trCache.set(id, res); }
+    try { res = await translateAll(uniq); trCache.set(key, res); }
     catch (e) { if (S.track && S.track.id === id) $("#src").textContent = srcBase + " · traduzione non disponibile"; return; }
   }
   if (!S.track || S.track.id !== id) return;
-  S.trans = res === "it" ? null : res;
-  $("#src").textContent = srcBase + (res === "it" ? " · brano in italiano" : " · Traduzione: Google");
+  if (key !== id + "|" + trLang()) return; // lingua cambiata nel frattempo
+  S.trans = res === "same" ? null : res;
+  $("#src").textContent = srcBase + (res === "same" ? " · brano già in " + langName(trLang()).toLowerCase() : " · Traduzione: Google (" + langName(trLang()).toLowerCase() + ")");
   if (S.lines) S.idx = -2; else if (S.plain) renderPlain();
 }
 function trOf(t) {
@@ -1540,6 +1564,13 @@ $("#bigger").onclick = () => setSize(Math.floor(S.size) + 1);
 $("#smaller").onclick = () => setSize(Math.ceil(S.size) - 1);
 $("#plus").onclick = () => { S.offset += 250; setOff(); };
 $("#minus").onclick = () => { S.offset -= 250; setOff(); };
+fillLangSelect();
+$("#trLang").onchange = e => {
+  store.set("trlang", e.target.value);
+  S.trans = null; if (S.lines) S.idx = -2; else if (S.plain) renderPlain();
+  if (document.body.classList.contains("notr")) { document.body.classList.remove("notr"); store.set("tr", true); setSwitch("#swTr", true); }
+  ensureTranslation(); toast("Traduzione in " + langName(e.target.value).toLowerCase());
+};
 $("#swTr").onclick = () => {
   const on = document.body.classList.toggle("notr") === false; store.set("tr", on); setSwitch("#swTr", on);
   if (on) ensureTranslation(); requestAnimationFrame(fitAll);
@@ -1672,7 +1703,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 23:05";
+const APP_VERSION = "27/11/2026 23:15";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
