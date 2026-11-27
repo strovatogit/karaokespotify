@@ -259,7 +259,7 @@ Cambiando ordine, il brano in corso continua dal punto in cui eri. La scelta val
   - **Questo dispositivo** (etichetta **TU**) è il telefono su cui stai usando l'app. Viene riconosciuto da solo, oppure lo indichi con *È questo*.
   - Play parte sempre su questo dispositivo, a meno che tu non abbia scelto un altro dispositivo dall'elenco.
   - Se Spotify non è aperto sul telefono, un pulsante **Apri Spotify** lo apre.
-- **Grandezza testo:** − / + da 1/10 a **Max**, come il pizzico.
+- **Grandezza testo:** − / + da 1/10 a **Max**, come il pizzico. Parte da **5/10** e vale sia per il testo sincronizzato sia per quello non sincronizzato.
 - **Sincronia:** *Ritarda* / *Anticipa* a passi di 0,25 s, se il testo arriva presto o tardi.
 - **Traduzione** e **Mostra riga successiva:** interruttori per attivarle o disattivarle.
 - **Lingua della traduzione:** tutte le lingue di Google Traduttore (oltre 130), con i nomi in italiano. L'italiano è la lingua predefinita. Se il brano è già nella lingua scelta, la traduzione non compare.

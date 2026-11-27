@@ -78,7 +78,7 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
   body.nonext #stage{grid-template-rows:1fr}
 }
 #plain{position:absolute;inset:0;overflow:auto;touch-action:pan-y;padding:calc(64px + var(--sat)) 6vw calc(150px + var(--sab));
-  font-size:calc(var(--ps,1) * clamp(22px,6.5vmin,64px));font-weight:700;line-height:1.3;text-align:center}
+  font-size:var(--plainpx,32px);font-weight:700;line-height:1.3;text-align:center}
 #plain .pl{margin:0 0 .6em}
 #plain .tr{font-size:.6em;margin-top:.15em}
 #zoomTip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;pointer-events:none;background:rgba(20,22,27,.92);border:1px solid var(--line);border-radius:16px;padding:12px 18px;font-size:18px;font-weight:700;opacity:0;transition:opacity .2s}
@@ -504,7 +504,7 @@ async function api(path) {
 /* ================= Stato ================= */
 const S = { track: null, lines: null, words: null, sing: 1500, idx: -2, stanzas: [],
   basePos: 0, baseT: 0, playing: false, offset: store.get("off", 0), demo: false,
-  size: store.get("size", 10), trans: null, plain: null, holdUntil: 0,
+  size: (() => { if (!store.get("size5", false)) { store.set("size5", true); store.set("size", 5); } return store.get("size", 5); })(), trans: null, plain: null, holdUntil: 0,
   mode: (m => m === "az" ? "name" : m)(store.get("mode", null)), shuffle: false, az: null, ctxUri: null, ctxType: null };
 const rawPos = () => S.basePos + (S.playing ? performance.now() - S.baseT : 0);
 const pos = () => rawPos() + S.offset;
@@ -1427,12 +1427,19 @@ function fitBox(box) {
   inner.style.fontSize = lo + "px";
 }
 function fitAll() { ["#prev", "#cur", "#next"].forEach(s => fitBox($(s))); }
+// testo non sincronizzato: stessa scala della riga di karaoke (60%, come le righe vicine), così "5" è uguale nei due casi
+function updatePlainSize() {
+  const md = Math.min(innerWidth, innerHeight);
+  const px = S.size >= 10 ? md * 0.12 : md * (0.035 + 0.03 * S.size) * 0.6;
+  document.documentElement.style.setProperty("--plainpx", Math.max(14, Math.round(px)) + "px");
+}
+addEventListener("resize", () => updatePlainSize());
 function sizeCap() { return S.size >= 10 ? Infinity : Math.min(innerWidth, innerHeight) * (0.035 + 0.03 * S.size); }
 function sizeLabel() { return S.size >= 10 ? "Max" : Math.round(S.size) + "/10"; }
 function setSize(n) {
   S.size = Math.max(1, Math.min(10, n)); store.set("size", S.size);
   $("#size").textContent = sizeLabel();
-  document.documentElement.style.setProperty("--ps", S.size >= 10 ? 1.25 : (0.45 + 0.08 * S.size).toFixed(2));
+  updatePlainSize();
   fitAll();
 }
 
@@ -1703,7 +1710,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 23:15";
+const APP_VERSION = "27/11/2026 23:20";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
