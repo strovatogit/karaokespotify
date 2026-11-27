@@ -1102,7 +1102,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 01:20";
+const APP_VERSION = "27/11/2026 01:25";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
@@ -1115,6 +1115,8 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 
 (async function start() {
   $("#ver").textContent = "Versione " + APP_VERSION;
+  const lastV = store.get("ver", null); store.set("ver", APP_VERSION);
+  if (lastV && lastV !== APP_VERSION) setTimeout(() => toast("App aggiornata alla versione " + APP_VERSION), 1200);
   $("#redir").textContent = REDIRECT;
   $("#cid").value = store.get("cid", "");
   if (location.protocol === "file:" || !window.isSecureContext)
