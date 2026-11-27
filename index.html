@@ -223,7 +223,7 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
     <div class="top">
       <button class="pill" id="plBtn" aria-label="Scegli playlist">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h12M4 12h12M4 18h7"/><path d="M17 15.5V21M17 15.5l3-1.5"/></svg>
-        <span id="plName">Scegli playlist</span>
+        <span id="plName">Brani che mi piacciono</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <button class="ib" id="trBtn" aria-label="Brani della playlist">
@@ -364,7 +364,7 @@ async function api(path) {
 const S = { track: null, lines: null, words: null, sing: 1500, idx: -2, stanzas: [],
   basePos: 0, baseT: 0, playing: false, offset: store.get("off", 0), demo: false,
   size: store.get("size", 10), trans: null, plain: null, holdUntil: 0,
-  mode: store.get("mode", null), shuffle: false, az: null, ctxUri: null, ctxType: null };
+  mode: (m => m === "az" ? "name" : m)(store.get("mode", null)), shuffle: false, az: null, ctxUri: null, ctxType: null };
 const rawPos = () => S.basePos + (S.playing ? performance.now() - S.baseT : 0);
 const pos = () => rawPos() + S.offset;
 function setPlayhead(ms, playing, keepLine) { S.basePos = ms; S.baseT = performance.now(); if (playing !== undefined) S.playing = playing; if (!keepLine) S.idx = -2; }
@@ -418,7 +418,8 @@ function onState(j, tMid) {
 function setNothing() {
   if (S.track === null && !$("#msg").classList.contains("hidden")) return;
   S.track = null; S.playing = false; setTrackInfo("", ""); setSrc(""); updatePlayIcon();
-  showMsg("Nessun brano in riproduzione", "Avvia un brano su Spotify: il testo apparirà qui.");
+  S.ctxUri = null; S.ctxType = null; setPlName(LIKED_NAME); updateOrder();
+  showMsg("Nessun brano in riproduzione", "Premi play per ascoltare i brani che ti piacciono, oppure scegli una playlist.");
 }
 
 /* ---- comandi di riproduzione ---- */
@@ -460,6 +461,7 @@ async function play(body) {
   return res === true;
 }
 async function togglePlay() {
+  if (!S.track && !S.demo && hasScopes()) { showHud(); return choosePlaylist(LIKED, LIKED_NAME); } // niente in riproduzione: parte la playlist predefinita
   const wasPlaying = S.playing && !!S.track, p = rawPos();
   if (S.track) setPlayhead(p, !wasPlaying, true); else S.playing = true;
   updatePlayIcon(); S.holdUntil = performance.now() + 1500;
@@ -492,13 +494,14 @@ function updateContext(ctx, tr) {
   S.ctxType = ctx && ctx.type;
   if (!uri) { // brani avviati come elenco (ordine per nome)
     S.ctxUri = null;
-    setPlName(azActive() ? S.az.name : "Scegli playlist"); updateOrder(); return;
+    setPlName(azActive() ? S.az.name : LIKED_NAME); updateOrder(); return;
   }
   if (uri === S.ctxUri) return;
   S.ctxUri = uri;
   if (ctx.type === "album") return setPlName("Album · " + (tr.album || ""));
   if (ctx.type === "artist") return setPlName("Artista · " + (tr.artist1 || ""));
-  if (ctx.type !== "playlist") return setPlName("Scegli playlist");
+  if (ctx.type === "collection" || /:collection$/.test(uri)) return setPlName(LIKED_NAME);
+  if (ctx.type !== "playlist") return setPlName(LIKED_NAME);
   if (plNames.has(uri)) return setPlName(plNames.get(uri));
   setPlName("Playlist");
   const id = uri.split(":").pop();
@@ -546,7 +549,7 @@ async function choosePlaylist(uri, name) {
   closeSheet(); setPlName(name);
   toast("Avvio “" + name + "”…");
   let ok;
-  if (S.mode === "az") ok = await playAZ(uri, name);
+  if (sortKey()) ok = await playAZ(uri, name, null, 0, sortKey());
   else if (S.mode === "shuffle") ok = await playShuffle(uri, null, name);
   else if (uri === LIKED) ok = await playList(uri, name, {});
   else { S.az = null; ok = await play({ context_uri: uri }); }
@@ -575,12 +578,18 @@ async function loadTracks(plUri) {
   const res = out.length ? out : "na";
   plTracks.set(plUri, res); return res;
 }
-const sortAZ = arr => [...arr].sort((a, b) => a.name.localeCompare(b.name, "it", { sensitivity: "base", numeric: true }));
+const cmp = (a, b) => a.localeCompare(b, "it", { sensitivity: "base", numeric: true });
+// ordina per titolo ("name") oppure per cantante ("artist", poi titolo)
+const sortBy = (arr, key) => [...arr].sort((a, b) => key === "artist" ? (cmp(a.artist, b.artist) || cmp(a.name, b.name)) : (cmp(a.name, b.name) || cmp(a.artist, b.artist)));
+const ORDERS = { name: "Titolo A‑Z", artist: "Cantante A‑Z" };
+// ordinamento in uso: quello dei brani in riproduzione, altrimenti quello scelto per le prossime playlist
+function sortKey() { if (azActive()) return S.az.az || null; return (S.mode === "name" || S.mode === "artist") ? S.mode : null; }
 function azActive() { return !!(S.az && !S.ctxUri && S.track && S.az.uris.has(S.track.uri)); }
 function currentPlaylist() {
   if (azActive()) return { uri: S.az.plUri, name: S.az.name };
   if (S.ctxType === "playlist" && S.ctxUri) return { uri: S.ctxUri, name: plNames.get(S.ctxUri) || $("#plName").textContent };
-  return null;
+  if (S.ctxType === "album" || S.ctxType === "artist") return null;
+  return { uri: LIKED, name: LIKED_NAME }; // playlist predefinita
 }
 const NA_MSG = "Spotify mostra l'elenco dei brani solo per le playlist create da te.";
 // riproduce i brani come elenco: ordinati per nome (az) oppure nell'ordine originale
@@ -589,14 +598,14 @@ async function playList(plUri, name, opt) {
   let arr;
   try { arr = await loadTracks(plUri); } catch (e) { toast("Impossibile leggere i brani."); return false; }
   if (arr === "na") { toast(NA_MSG + " Qui l'ordine per nome non è disponibile."); return false; }
-  const sorted = opt.az ? sortAZ(arr) : arr;
+  const sorted = opt.az ? sortBy(arr, opt.az) : arr;
   let posMs = opt.posMs || 0;
   const found = opt.startUri ? sorted.findIndex(t => t.uri === opt.startUri) : -1;
   if (found < 0) posMs = 0; // il brano in corso non è nell'elenco: si parte dal primo
   let i = Math.max(0, found), list = sorted;
   if (list.length > 500) { list = sorted.slice(i, i + 500); i = 0; } // limite di sicurezza della richiesta
   await player("PUT", "shuffle?state=" + !!opt.shuffle, null, true);
-  S.az = { plUri, name, az: !!opt.az, uris: new Set(list.map(t => t.uri)) };
+  S.az = { plUri, name, az: opt.az || null, uris: new Set(list.map(t => t.uri)) };
   const body = { uris: list.map(t => t.uri), offset: { position: i } };
   if (posMs) body.position_ms = Math.round(posMs);
   const ok = await play(body);
@@ -606,7 +615,7 @@ async function playList(plUri, name, opt) {
   }
   return ok;
 }
-const playAZ = (plUri, name, startUri, posMs) => playList(plUri, name, { az: true, startUri, posMs });
+const playAZ = (plUri, name, startUri, posMs, key) => playList(plUri, name, { az: key || "name", startUri, posMs });
 // riproduce la playlist in ordine casuale
 async function playShuffle(plUri, startUri, name) {
   if (plUri === LIKED) return playList(plUri, name || LIKED_NAME, { shuffle: true, startUri });
@@ -616,29 +625,29 @@ async function playShuffle(plUri, startUri, name) {
   if (ok) { S.az = null; await player("PUT", "shuffle?state=true", null, true); S.shuffle = true; updateOrder(); }
   return ok;
 }
+function orderState() { return S.shuffle ? "shuffle" : azActive() && S.az.az ? S.az.az : "plain"; }
 function updateOrder() {
-  const t = S.shuffle ? "Casuale" : azActive() && S.az.az ? "A‑Z" : "In ordine";
-  $("#orderTxt").textContent = t;
-  $("#orderBtn").classList.toggle("on", t !== "In ordine");
-  $("#icShuf").classList.toggle("hidden", t === "A‑Z"); $("#icAz").classList.toggle("hidden", t !== "A‑Z");
+  const o = orderState();
+  $("#orderTxt").textContent = o === "shuffle" ? "Casuale" : o === "name" ? "Titolo" : o === "artist" ? "Cantante" : "In ordine";
+  $("#orderBtn").classList.toggle("on", o !== "plain");
+  $("#icShuf").classList.toggle("hidden", o === "name" || o === "artist");
+  $("#icAz").classList.toggle("hidden", !(o === "name" || o === "artist"));
 }
-// pulsante ordine: alterna tra per nome (A‑Z) e casuale
+// pulsante ordine: Titolo A‑Z → Cantante A‑Z → Casuale → Titolo A‑Z …
 async function toggleOrder() {
   showHud();
   if (S.demo) { toast("Nella demo non c'è una playlist."); return; }
   if (!hasScopes()) { needLogin(); return; }
-  if (!S.shuffle) {
-    S.mode = "shuffle"; store.set("mode", S.mode);
+  const o = orderState(), next = o === "name" ? "artist" : o === "artist" ? "shuffle" : "name";
+  S.mode = next; store.set("mode", next);
+  if (next === "shuffle") {
     if (await player("PUT", "shuffle?state=true", null, true) === true) { S.shuffle = true; updateOrder(); toast("Ordine casuale"); }
-    else toast("Avvia prima un brano su Spotify.");
+    else toast("Ordine casuale: vale per la prossima playlist che avvii.");
   } else {
-    S.mode = "az"; store.set("mode", S.mode);
     const pl = currentPlaylist();
-    if (!pl) {
-      await player("PUT", "shuffle?state=false", null, true); S.shuffle = false; updateOrder();
-      toast("Scegli una playlist per ascoltarla in ordine per nome."); return;
-    }
-    if (await playAZ(pl.uri, pl.name, S.track && S.track.uri, S.track ? rawPos() : 0)) toast("Ordine per nome (A‑Z)");
+    if (!pl) { toast(ORDERS[next] + ": vale per la prossima playlist che avvii."); updateOrder(); return; }
+    if (!S.track) { toast(ORDERS[next] + ": premi play per iniziare."); return; }
+    if (await playAZ(pl.uri, pl.name, S.track.uri, rawPos(), next)) toast("Ordine: " + ORDERS[next]);
   }
   S.holdUntil = 0; setTimeout(poll, 900);
 }
@@ -659,10 +668,10 @@ async function openTracks() {
 }
 function renderTracks(scroll) {
   const arr = plTracks.get(trCurPl.uri); if (!Array.isArray(arr)) return;
-  const az = (azActive() && S.az.az) || S.mode === "az";
-  $("#trSub").textContent = trCurPl.name + " · " + arr.length + " brani" + (az ? " · ordine per nome" : "");
+  const az = sortKey();
+  $("#trSub").textContent = trCurPl.name + " · " + arr.length + " brani" + (az ? " · " + ORDERS[az] : "");
   const q = $("#trSearch").value.trim().toLowerCase();
-  const list = (az ? sortAZ(arr) : arr).map((t, k) => ({ t, k })).filter(x => !q || (x.t.name + " " + x.t.artist).toLowerCase().includes(q));
+  const list = (az ? sortBy(arr, az) : arr).map((t, k) => ({ t, k })).filter(x => !q || (x.t.name + " " + x.t.artist).toLowerCase().includes(q));
   if (!list.length) { $("#trList").innerHTML = '<p class="empty">Nessun brano trovato.</p>'; return; }
   const curU = S.track && S.track.uri;
   $("#trList").innerHTML = list.map(({ t, k }) =>
@@ -673,7 +682,7 @@ function renderTracks(scroll) {
 async function chooseTrack(uri) {
   const pl = trCurPl; closeSheet();
   let ok;
-  if ((azActive() && S.az.az) || S.mode === "az") ok = await playAZ(pl.uri, pl.name, uri);
+  if (sortKey()) ok = await playAZ(pl.uri, pl.name, uri, 0, sortKey());
   else if (pl.uri === LIKED) ok = await playList(pl.uri, pl.name, { startUri: uri, shuffle: S.shuffle });
   else ok = await play({ context_uri: pl.uri, offset: { uri } });
   if (ok) { S.holdUntil = 0; setTimeout(poll, 700); setTimeout(poll, 1800); }
