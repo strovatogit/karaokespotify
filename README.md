@@ -71,6 +71,7 @@ Servizi esterni usati:
 |---|---|---|
 | [Spotify Web API](https://developer.spotify.com/documentation/web-api) | Brano in corso, comandi di riproduzione, playlist, libreria, dispositivi | Un'app nella [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) e account **Premium** |
 | [LRCLIB](https://lrclib.net) | Testi sincronizzati | Nessuno, è gratuito e non richiede chiavi |
+| [Last.fm API](https://www.last.fm/api) (facoltativa) | Brani simili per la Radio del brano in ascolto | Una chiave API gratuita |
 | Google Translate (endpoint pubblico `translate.googleapis.com`) | Traduzione in italiano | Nessuno. È un servizio gratuito **non ufficiale**, quindi può smettere di funzionare |
 | Hosting statico in **HTTPS** (es. GitHub Pages) | Pubblicare l'app | Spotify accetta il ritorno dal login solo su `https://`, oppure su `http://127.0.0.1` per i test |
 
@@ -202,7 +203,16 @@ Un altro doppio tocco rimette la barra a comparsa. La scelta resta salvata.
 
 Tocca il nome della playlist in alto per vedere tutte le tue playlist, con ricerca. Toccandone una, parte subito su Spotify.
 
-**Brani che mi piacciono** è sempre il primo dell'elenco ed è la **playlist predefinita**. Se non sta suonando niente, play fa partire quelli.
+**Brani che mi piacciono** è sempre nell'elenco ed è la **playlist predefinita**. Se non sta suonando niente, play fa partire quelli.
+
+In cima all'elenco ci sono anche:
+
+- **📻 Radio del brano in ascolto:** crea una coda di circa 30 brani simili a quello che stai ascoltando e la fa partire senza interrompere il brano in corso.
+  - I brani simili vengono da [Last.fm](https://www.last.fm/api), perché Spotify non offre più i suoi consigli alle app nuove. Ognuno viene poi cercato su Spotify.
+  - Serve una **chiave API Last.fm**, gratuita: creala su [last.fm/api/account/create](https://www.last.fm/api/account/create) e incollala nelle impostazioni.
+- **✦ Discover Weekly** (*Scopri settimanale*): Spotify non la include nell'elenco delle playlist, quindi va collegata una volta con il suo link. Nell'app Spotify apri la playlist, poi *⋯ → Condividi → Copia link*, e incolla il link nell'app karaoke.
+  - Si avvia e si può ascoltare in ordine casuale, ma Spotify non permette di leggerne l'elenco dei brani.
+- **＋ Aggiungi playlist da link:** come sopra, per qualsiasi altra playlist che non compare, ad esempio *Release Radar* o i *Daily Mix*. La ✕ la toglie dall'elenco.
 
 <br clear="right">
 
@@ -254,6 +264,7 @@ Tutte le scelte restano salvate sul dispositivo.
 ## Limiti noti
 
 - **Modalità sviluppatore Spotify:** l'app Spotify creata nella dashboard permette **al massimo 5 utenti autorizzati**, aggiunti a mano in *User Management*. Tutti devono avere Spotify **Premium**. Per aprirla a tutti servirebbe l'accesso esteso di Spotify, che oggi è riservato ad app già affermate e su larga scala.
+- **Playlist generate da Spotify** (Discover Weekly, Release Radar, Daily Mix, radio di Spotify): dal 2024 Spotify non le rende disponibili alle app nuove. Non compaiono nell'elenco, non se ne possono leggere i brani e la radio di Spotify non è utilizzabile. Per questo la Radio usa Last.fm e le playlist di Spotify si collegano dal link.
 - **Brani delle playlist:** Spotify fornisce l'elenco dei brani **solo per le playlist create da te** e per i *Brani che mi piacciono*. Per le playlist di altri, comprese quelle di Spotify, l'elenco brani e l'ordine per titolo o cantante non sono disponibili. Si possono comunque far partire, anche in ordine casuale.
 - **Copertura dei testi:** LRCLIB è un archivio di testi inseriti dagli utenti. I brani molto conosciuti ci sono quasi sempre, quelli meno noti a volte no oppure hanno solo il testo senza tempi.
 - **Avanzamento parola per parola:** è una stima basata sulla lunghezza della riga. Precisa è la riga, non la singola parola.

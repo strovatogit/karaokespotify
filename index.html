@@ -206,6 +206,13 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .pli .o{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pli>div{min-width:0}
 .pli.cur .n{color:var(--acc)}
+.pli .ph.dw{background:linear-gradient(135deg,#3d5afe,#00bcd4);color:#fff;font-size:22px}
+.plrow{display:flex;align-items:center}
+.plrow .pli{flex:1;min-width:0}
+.plrow .rm{flex:none;width:36px;height:36px;border-radius:50%;color:var(--muted);font-size:18px}
+#linkBox{flex:none;background:#0e1014;border:1px solid #2a2d35;border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#cfcfcf;line-height:1.45}
+#linkBox input{width:100%;margin:8px 0;padding:10px 12px;border-radius:10px;border:1px solid #2a2d35;background:#15171c;color:#fff;font:inherit;font-size:15px}
+#linkBox .row{margin-top:0}
 .pli .ph.radio{background:linear-gradient(135deg,#ff7a59,#b5179e);color:#fff;font-size:24px}
 .lfm{display:block;padding:13px 0;border-top:1px solid var(--line)}
 .lfm input{width:100%;margin-top:8px;padding:10px 12px;border-radius:10px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:15px;font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -366,6 +373,11 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
     <div class="grab"></div>
     <h2>Scegli una playlist</h2>
     <input id="plSearch" type="search" placeholder="Cerca tra le tue playlist" autocomplete="off">
+    <div id="linkBox" class="hidden">
+      <div id="linkHelp"></div>
+      <input id="linkInput" placeholder="https://open.spotify.com/playlist/…" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="row"><button class="btn primary" id="linkOk">Aggiungi</button><button class="btn" id="linkCancel">Annulla</button></div>
+    </div>
     <div id="plList"></div>
   </div>
 </section>
@@ -642,6 +654,37 @@ let playlists = null; const plNames = new Map();
 const LIKED = "liked", LIKED_NAME = "Brani che mi piacciono";
 const RADIO = "radio";
 
+/* ---- playlist collegate da link (es. Discover Weekly) ----
+   Le playlist generate da Spotify non sono più leggibili dalle app nuove: non compaiono
+   nell'elenco e non se ne possono leggere i brani, ma si possono avviare dal loro link. */
+const DW_NAME = "Discover Weekly";
+const customPl = () => store.get("custompl", []) || [];
+function parsePlaylistLink(t) {
+  const m = String(t).match(/playlist[\/:]([A-Za-z0-9]{22})/);
+  return m ? "spotify:playlist:" + m[1] : null;
+}
+let linkFor = null; // "dw" oppure "any"
+function showLinkBox(kind) {
+  linkFor = kind;
+  $("#linkHelp").innerHTML = kind === "dw"
+    ? "Nell'app Spotify apri <b>Discover Weekly</b> (in italiano <i>Scopri settimanale</i>), tocca <b>⋯ → Condividi → Copia link</b> e incollalo qui. Basta farlo una volta."
+    : "Nell'app Spotify apri la playlist, tocca <b>⋯ → Condividi → Copia link</b> e incollalo qui.";
+  $("#linkInput").value = ""; $("#linkBox").classList.remove("hidden");
+  setTimeout(() => { try { $("#linkInput").focus(); } catch (e) {} }, 200);
+}
+async function addLinkedPlaylist() {
+  const uri = parsePlaylistLink($("#linkInput").value);
+  if (!uri) { toast("Link non valido: deve essere il link di una playlist Spotify."); return; }
+  let name = linkFor === "dw" ? DW_NAME : "Playlist collegata";
+  try { const j = await api("playlists/" + uri.split(":").pop() + "?fields=name"); if (j && j.name) name = j.name; } catch (e) {}
+  const list = customPl().filter(p => p.uri !== uri && !(linkFor === "dw" && p.dw));
+  list.unshift({ uri, name, dw: linkFor === "dw" });
+  store.set("custompl", list); plNames.set(uri, name);
+  $("#linkBox").classList.add("hidden"); renderPl();
+  toast("“" + name + "” aggiunta all'elenco");
+}
+customPl().forEach(p => plNames.set(p.uri, p.name));
+
 /* ---- Radio del brano in ascolto ----
    Spotify non dà più accesso ai consigli e alle sue radio alle app nuove (novembre 2024):
    i brani simili arrivano da Last.fm e vengono cercati su Spotify uno per uno. */
@@ -745,19 +788,26 @@ function renderPl() {
   if (!list.length) { $("#plList").innerHTML = '<p class="empty">' + (q ? "Nessuna playlist trovata." : "Non hai ancora playlist.") + "</p>"; return; }
   const radioRow = (!q && S.track && S.track.type !== "episode")
     ? '<button class="pli" data-uri="' + RADIO + '" data-name=""><span class="ph radio">📻</span><div><div class="n">Radio del brano in ascolto</div><div class="o">Brani simili a “' + esc(S.track.name) + "”</div></div></button>" : "";
-  $("#plList").innerHTML = radioRow + list.map(p => {
+  const cust = customPl().filter(p => !q || p.name.toLowerCase().includes(q));
+  const custRows = cust.map(p => '<div class="plrow"><button class="pli' + (p.uri === S.ctxUri ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
+    + '<span class="ph ' + (p.dw ? "dw" : "") + '">' + (p.dw ? "✦" : "♪") + '</span><div><div class="n">' + esc(p.name) + '</div><div class="o">'
+    + (p.dw ? "Scopri settimanale · collegata da link" : "Collegata da link") + '</div></div></button><button class="rm" data-rm="' + esc(p.uri) + '" aria-label="Rimuovi">✕</button></div>').join("");
+  const dwRow = (!q && !customPl().some(p => p.dw)) ? '<button class="pli" data-link="dw"><span class="ph dw">✦</span><div><div class="n">' + DW_NAME
+    + '</div><div class="o">Scopri settimanale · tocca per collegarla</div></div></button>' : "";
+  const addRow = !q ? '<button class="pli" data-link="any"><span class="ph">＋</span><div><div class="n">Aggiungi playlist da link</div><div class="o">Per le playlist che non compaiono qui</div></div></button>' : "";
+  $("#plList").innerHTML = radioRow + custRows + dwRow + list.map(p => {
     const img = (p.images || []).filter(Boolean).slice(-1)[0];
     const n = ((p.items || p.tracks || {}).total);
     const sub = [(p.owner && p.owner.display_name) || "", n != null ? n + " brani" : ""].filter(Boolean).join(" · ");
     return '<button class="pli' + (p.uri === S.ctxUri || (azActive() && p.uri === S.az.plUri) ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
       + (p.liked ? '<span class="ph liked">♥</span>' : img ? '<img loading="lazy" alt="" src="' + esc(img.url) + '">' : '<span class="ph">♪</span>')
       + '<div><div class="n">' + esc(p.name) + '</div><div class="o">' + esc(sub) + "</div></div></button>";
-  }).join("");
+  }).join("") + addRow;
 }
 async function openPlaylists() {
   if (S.demo) { toast("Nella demo non ci sono playlist: accedi con Spotify."); return; }
   if (!hasScopes()) { needLogin(); return; }
-  openSheet("pl");
+  openSheet("pl"); $("#linkBox").classList.add("hidden");
   if (!playlists) $("#plList").innerHTML = '<p class="empty">Carico le playlist…</p>';
   try { await loadPlaylists(); renderPl(); }
   catch (e) { $("#plList").innerHTML = '<p class="empty">Impossibile caricare le playlist (' + esc(e.message) + ").</p>"; }
@@ -766,7 +816,13 @@ async function choosePlaylist(uri, name) {
   closeSheet(); setPlName(name);
   toast("Avvio “" + name + "”…");
   let ok;
-  if (sortKey()) ok = await playAZ(uri, name, null, 0, sortKey());
+  const linked = customPl().some(p => p.uri === uri);
+  if (linked) { // brani non leggibili: si avvia così com'è (eventualmente in ordine casuale)
+    S.az = null;
+    if (S.mode === "shuffle") ok = await playShuffle(uri, null, name);
+    else { ok = await play({ context_uri: uri }); if (ok && sortKey()) toast("Per questa playlist Spotify non permette l'ordine per titolo o cantante."); }
+  }
+  else if (sortKey()) ok = await playAZ(uri, name, null, 0, sortKey());
   else if (S.mode === "shuffle") ok = await playShuffle(uri, null, name);
   else if (uri === LIKED) ok = await playList(uri, name, {});
   else { S.az = null; ok = await play({ context_uri: uri }); }
@@ -1270,7 +1326,16 @@ $("#devList").onclick = e => {
 };
 $("#plBtn").onclick = openPlaylists;
 $("#plSearch").oninput = renderPl;
-$("#plList").onclick = e => { const b = e.target.closest(".pli"); if (!b) return; if (b.dataset.uri === RADIO) startRadio(); else choosePlaylist(b.dataset.uri, b.dataset.name); };
+$("#plList").onclick = e => {
+  const rm = e.target.closest(".rm");
+  if (rm) { store.set("custompl", customPl().filter(p => p.uri !== rm.dataset.rm)); renderPl(); return; }
+  const b = e.target.closest(".pli"); if (!b) return;
+  if (b.dataset.link) { showLinkBox(b.dataset.link); return; }
+  if (b.dataset.uri === RADIO) startRadio(); else choosePlaylist(b.dataset.uri, b.dataset.name);
+};
+$("#linkOk").onclick = addLinkedPlaylist;
+$("#linkCancel").onclick = () => $("#linkBox").classList.add("hidden");
+$("#linkInput").onkeydown = e => { if (e.key === "Enter") addLinkedPlaylist(); };
 $("#lfmKey").value = store.get("lfmkey", "");
 $("#lfmKey").onchange = $("#lfmKey").oninput = e => store.set("lfmkey", e.target.value.trim());
 $("#prevTr").onclick = () => skipTrack(-1);
@@ -1425,7 +1490,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 22:10";
+const APP_VERSION = "27/11/2026 22:20";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
