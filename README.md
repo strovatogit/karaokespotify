@@ -84,6 +84,7 @@ Permessi Spotify richiesti al login (scope):
 | `playlist-read-private`, `playlist-read-collaborative` | Elenco playlist e relativi brani |
 | `user-library-read` | "Brani che mi piacciono" |
 | `user-library-modify` | Cuore: aggiungere o togliere un brano dai preferiti |
+| `playlist-modify-private` | Salvare la radio come playlist |
 
 Browser supportati: Chrome su Android (consigliato, installabile a schermo intero), Safari su iPhone/iPad, Chrome, Edge e Firefox su PC.
 
@@ -210,6 +211,7 @@ In cima all'elenco ci sono anche:
 
 - **📻 Radio del brano in ascolto:** crea una coda di circa 30 brani simili a quello che stai ascoltando e la fa partire senza interrompere il brano in corso.
   - I brani simili vengono da [Last.fm](https://www.last.fm/api), perché Spotify non offre più i suoi consigli alle app nuove. Ognuno viene poi cercato su Spotify.
+  - Il pulsante **Salva** accanto alla voce salva l'ultima radio creata tra le tue playlist Spotify, come playlist privata. Prima ti chiede il nome, che puoi cambiare. Compare solo se c'è una radio non ancora salvata.
   - Serve una **chiave API Last.fm**, gratuita: creala su [last.fm/api/account/create](https://www.last.fm/api/account/create) e incollala nelle impostazioni.
 - **✦ Discover Weekly** (*Scopri settimanale*): Spotify non la include nell'elenco delle playlist, quindi va collegata una volta con il suo link. Nell'app Spotify apri la playlist, poi *⋯ → Condividi → Copia link*, e incolla il link nell'app karaoke.
   - Si avvia e si può ascoltare in ordine casuale, ma Spotify non permette di leggerne l'elenco dei brani.

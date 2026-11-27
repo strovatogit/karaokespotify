@@ -223,6 +223,14 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .pli .ph.dw{background:linear-gradient(135deg,#3d5afe,#00bcd4);color:#fff;font-size:22px}
 .plrow{display:flex;align-items:center}
 .plrow .pli{flex:1;min-width:0}
+.plrow .save{flex:none;font-size:13px;font-weight:700;color:#000;background:var(--acc);border-radius:999px;padding:8px 14px;margin-left:6px}
+.plrow .save:active{filter:brightness(.9)}
+#dlgBg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px}
+#dlg{width:min(100%,420px);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+#dlg h3{margin:0 0 6px;font-size:18px}
+#dlg p{margin:0 0 12px;color:var(--muted);font-size:13px;line-height:1.45}
+#dlgInput{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:16px}
+#dlg .row{justify-content:flex-end;margin-top:14px}
 .plrow .rm{flex:none;width:36px;height:36px;border-radius:50%;color:var(--muted);font-size:18px}
 #linkBox{flex:none;background:#0e1014;border:1px solid #2a2d35;border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#cfcfcf;line-height:1.45}
 #linkBox input{width:100%;margin:8px 0;padding:10px 12px;border-radius:10px;border:1px solid #2a2d35;background:#15171c;color:#fff;font:inherit;font-size:15px}
@@ -362,6 +370,12 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 
   <div id="toast" class="hidden"><span></span><button></button></div>
 
+  <div id="dlgBg" class="hidden"><div id="dlg" role="dialog" aria-modal="true">
+    <h3>Salva la radio come playlist</h3>
+    <p id="dlgInfo"></p>
+    <input id="dlgInput" maxlength="100" autocomplete="off">
+    <div class="row"><button class="btn" id="dlgCancel">Annulla</button><button class="btn primary" id="dlgOk">Salva</button></div>
+  </div></div>
   <div id="sheetBg"></div>
   <div id="sheet" role="dialog" aria-label="Impostazioni">
     <div class="grab"></div>
@@ -414,7 +428,7 @@ const store = {
   del(k) { try { localStorage.removeItem("kk_" + k); } catch (e) {} }
 };
 const REDIRECT = location.origin + location.pathname;
-const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read user-library-modify";
+const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read user-library-modify playlist-modify-private";
 const fmt = ms => { ms = Math.max(0, ms || 0); const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 /* ================= OAuth PKCE ================= */
@@ -736,6 +750,40 @@ async function findOnSpotify(t) {
   const x = j && j.tracks && j.tracks.items && j.tracks.items[0];
   return x ? { uri: x.uri, name: x.name, artist: (x.artists || []).map(a => a.name).join(", "), dur: x.duration_ms || 0 } : null;
 }
+/* ---- salvataggio della radio come playlist Spotify ---- */
+function askRadioName() {
+  return new Promise(res => {
+    $("#dlgInfo").textContent = S.radio.uris.length + " brani. Puoi cambiare il nome prima di salvarla tra le tue playlist.";
+    $("#dlgInput").value = S.radio.name; $("#dlgBg").classList.remove("hidden");
+    setTimeout(() => { try { $("#dlgInput").focus(); $("#dlgInput").select(); } catch (e) {} }, 100);
+    const done = v => { $("#dlgBg").classList.add("hidden"); $("#dlgOk").onclick = $("#dlgCancel").onclick = $("#dlgInput").onkeydown = $("#dlgBg").onclick = null; res(v); };
+    $("#dlgOk").onclick = () => { const v = $("#dlgInput").value.trim(); if (!v) { $("#dlgInput").focus(); return; } done(v); };
+    $("#dlgCancel").onclick = () => done(null);
+    $("#dlgBg").onclick = e => { if (e.target.id === "dlgBg") done(null); };
+    $("#dlgInput").onkeydown = e => { if (e.key === "Enter") $("#dlgOk").onclick(); else if (e.key === "Escape") done(null); };
+  });
+}
+async function saveRadio() {
+  if (!S.radio || S.radio.saved) return;
+  if (!hasScopes()) { needLogin(); return; }
+  const name = await askRadioName(); if (!name) return;
+  const btn = $("#saveRadio"); if (btn) { btn.disabled = true; btn.textContent = "Salvo…"; }
+  try {
+    const tok = await accessToken(), H = { Authorization: "Bearer " + tok, "Content-Type": "application/json" };
+    const r = await fetch("https://api.spotify.com/v1/me/playlists", { method: "POST", headers: H,
+      body: JSON.stringify({ name, public: false, description: "Radio creata con Karaoke Spotify" }) });
+    if (!r.ok) throw new Error(r.status);
+    const pl = await r.json();
+    for (let k = 0; k < S.radio.uris.length; k += 100) { // massimo 100 brani per richiesta
+      const r2 = await fetch("https://api.spotify.com/v1/playlists/" + pl.id + "/items", { method: "POST", headers: H, body: JSON.stringify({ uris: S.radio.uris.slice(k, k + 100) }) });
+      if (!r2.ok) throw new Error(r2.status);
+    }
+    S.radio.saved = true; S.radio.name = name; playlists = null; plNames.set(pl.uri, name);
+    toast("Playlist “" + name + "” salvata");
+  } catch (e) { toast("Non riesco a salvare la playlist (" + e.message + ")."); }
+  if ($("#plList") && document.body.dataset.sheet === "pl") { try { await loadPlaylists(); } catch (e) {} renderPl(); }
+}
+
 async function startRadio() {
   closeSheet();
   if (S.demo) { toast("Nella demo la radio non è disponibile."); return; }
@@ -760,6 +808,7 @@ async function startRadio() {
     const name = "Radio · " + tr.name;
     const list = [{ uri: tr.uri, name: tr.name, artist: tr.artist, dur: tr.dur }].concat(found);
     plTracks.set(RADIO, list); plNames.set(RADIO, name);
+    S.radio = { name, uris: list.map(t => t.uri), saved: false };
     await player("PUT", "shuffle?state=false", null, true);
     S.az = { plUri: RADIO, name, az: null, uris: new Set(list.map(t => t.uri)) };
     // continua il brano in corso dal punto in cui è, poi i brani simili
@@ -808,8 +857,11 @@ function renderPl() {
   const q = $("#plSearch").value.trim().toLowerCase();
   const list = (playlists || []).filter(p => !q || (p.name || "").toLowerCase().includes(q));
   if (!list.length) { $("#plList").innerHTML = '<p class="empty">' + (q ? "Nessuna playlist trovata." : "Non hai ancora playlist.") + "</p>"; return; }
+  const canSave = !!(S.radio && !S.radio.saved); // radio caricata e non ancora salvata
   const radioRow = (!q && S.track && S.track.type !== "episode")
-    ? '<button class="pli" data-uri="' + RADIO + '" data-name=""><span class="ph radio">📻</span><div><div class="n">Radio del brano in ascolto</div><div class="o">Brani simili a “' + esc(S.track.name) + "”</div></div></button>" : "";
+    ? '<div class="plrow"><button class="pli" data-uri="' + RADIO + '" data-name=""><span class="ph radio">📻</span><div><div class="n">Radio del brano in ascolto</div><div class="o">'
+      + (S.radio ? "Ultima: " + esc(S.radio.name) + (S.radio.saved ? " · salvata" : "") : "Brani simili a “" + esc(S.track.name) + "”") + "</div></div></button>"
+      + (canSave ? '<button class="save" id="saveRadio">Salva</button>' : "") + "</div>" : "";
   const cust = customPl().filter(p => !q || p.name.toLowerCase().includes(q));
   const custRows = cust.map(p => '<div class="plrow"><button class="pli' + (p.uri === S.ctxUri ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
     + '<span class="ph ' + (p.dw ? "dw" : "") + '">' + (p.dw ? "✦" : "♪") + '</span><div><div class="n">' + esc(p.name) + '</div><div class="o">'
@@ -1383,6 +1435,7 @@ $("#devList").onclick = e => {
 $("#plBtn").onclick = openPlaylists;
 $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => {
+  if (e.target.closest("#saveRadio")) { saveRadio(); return; }
   const rm = e.target.closest(".rm");
   if (rm) { store.set("custompl", customPl().filter(p => p.uri !== rm.dataset.rm)); renderPl(); return; }
   const b = e.target.closest(".pli"); if (!b) return;
@@ -1548,7 +1601,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 22:45";
+const APP_VERSION = "27/11/2026 22:55";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
