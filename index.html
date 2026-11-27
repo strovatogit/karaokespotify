@@ -1427,10 +1427,10 @@ function fitBox(box) {
   inner.style.fontSize = lo + "px";
 }
 function fitAll() { ["#prev", "#cur", "#next"].forEach(s => fitBox($(s))); }
-// testo non sincronizzato: stessa scala della riga di karaoke (60%, come le righe vicine), così "5" è uguale nei due casi
+// testo non sincronizzato: stessa scala della riga di karaoke, ma 3 livelli più grande di quello impostato
 function updatePlainSize() {
-  const md = Math.min(innerWidth, innerHeight);
-  const px = S.size >= 10 ? md * 0.12 : md * (0.035 + 0.03 * S.size) * 0.6;
+  const md = Math.min(innerWidth, innerHeight), L = Math.min(10, S.size) + 3;
+  const px = md * (0.035 + 0.03 * L) * 0.6;
   document.documentElement.style.setProperty("--plainpx", Math.max(14, Math.round(px)) + "px");
 }
 addEventListener("resize", () => updatePlainSize());
@@ -1710,7 +1710,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 23:20";
+const APP_VERSION = "27/11/2026 23:25";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
