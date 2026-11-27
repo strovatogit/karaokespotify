@@ -178,7 +178,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 - **Impostazioni** (icona a cursori).
 
 **In basso**
-- Titolo e artista del brano, con il **cuore** ♡ per aggiungerlo ai *Brani che mi piacciono* (diventa verde ♥ se c'è già; toccalo di nuovo per toglierlo).
+- Titolo e artista del brano. A sinistra c'è il pulsante **📻 radio**, che crea la radio del brano in ascolto (vedi [Playlist](#playlist)). A destra c'è il **cuore** ♡ per aggiungerlo ai *Brani che mi piacciono* (diventa verde ♥ se c'è già; toccalo di nuovo per toglierlo).
 - Barra di avanzamento: toccala o trascinala per spostarti nel brano.
 - Pulsanti, da sinistra: **⏮ brano**, **⏪ strofa**, **play/pausa**, **strofa ⏩**, **brano ⏭**.
 
