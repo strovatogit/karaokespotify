@@ -1465,9 +1465,9 @@ function fitBox(box) {
   return px;
 }
 function fitAll() { computeSongFit(); ["#cur", "#prev", "#next"].forEach(s => fitBox($(s))); }
-// testo non sincronizzato: 3 livelli più grande di quello impostato (con 5 → come 8)
+// testo non sincronizzato: stessa scala del testo sincronizzato (a 5 circa 48 px su un telefono)
 function updatePlainSize() {
-  const md = Math.min(innerWidth, innerHeight), L = Math.min(10, S.size) + 3;
+  const md = Math.min(innerWidth, innerHeight), L = Math.min(10, S.size);
   const px = md * 0.164 * levelFactor(L) / levelFactor(8); // a 8 circa 64 px su un telefono
   document.documentElement.style.setProperty("--plainpx", Math.max(14, Math.round(px)) + "px");
 }
@@ -1747,7 +1747,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 23:40";
+const APP_VERSION = "27/11/2026 23:45";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {

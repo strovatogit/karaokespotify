@@ -262,7 +262,7 @@ Cambiando ordine, il brano in corso continua dal punto in cui eri. La scelta val
 - **Grandezza testo:** − / + da 1/10 a **Max**, come il pizzico. Parte da **5/10**.
   - **Da 1 a 9:** tutte le righe del brano hanno la stessa grandezza, e ogni livello la cambia di circa l'11%. Il 5 è la grandezza con cui ci sta il 90% delle righe del brano. Dal 6 in su, le righe che non ci stanno si fermano alla grandezza massima possibile.
   - **Max:** ogni riga riempie tutto lo spazio, quindi le righe corte diventano enormi.
-  - **Testo non sincronizzato:** viene mostrato 3 livelli più grande, quindi con 5/10 è come 8/10.
+  - **Testo non sincronizzato:** segue la stessa scala.
 - **Sincronia:** *Ritarda* / *Anticipa* a passi di 0,25 s, se il testo arriva presto o tardi.
 - **Traduzione** e **Mostra riga successiva:** interruttori per attivarle o disattivarle.
 - **Lingua della traduzione:** tutte le lingue di Google Traduttore (oltre 130), con i nomi in italiano. L'italiano è la lingua predefinita. Se il brano è già nella lingua scelta, la traduzione non compare.
