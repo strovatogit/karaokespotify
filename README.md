@@ -5,9 +5,9 @@ Web app (PWA) che mostra **in stile karaoke il testo sincronizzato** del brano c
 **Indirizzo:** https://strovatogit.github.io/karaokespotify/
 
 <p align="center">
-  <img src="docs/02-karaoke-verticale.png" width="260" alt="Testo karaoke in verticale">
+  <img src="docs/02-karaoke-verticale-t4.png" width="260" alt="Testo karaoke in verticale">
   &nbsp;
-  <img src="docs/03-karaoke-orizzontale.png" width="520" alt="Testo karaoke in orizzontale">
+  <img src="docs/03-karaoke-orizzontale-t4.png" width="520" alt="Testo karaoke in orizzontale">
 </p>
 
 > Gli screenshot usano dati di esempio: brani, testi e playlist sono inventati.
@@ -106,7 +106,7 @@ python -m http.server 8000
 
 ### 3. Primo accesso
 
-<img src="docs/01-configurazione.png" width="260" align="right" alt="Schermata di configurazione">
+<img src="docs/01-configurazione-t4.png" width="260" align="right" alt="Schermata di configurazione">
 
 1. Apri l'indirizzo dell'app.
 2. La pagina mostra l'indirizzo esatto da usare come Redirect URI, con un pulsante per copiarlo.
@@ -130,7 +130,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 
 ### Testo karaoke
 
-<img src="docs/02-karaoke-verticale.png" width="240" align="right" alt="Karaoke in verticale">
+<img src="docs/02-karaoke-verticale-t4.png" width="240" align="right" alt="Karaoke in verticale">
 
 - **Riga corrente:** è al centro, **grande quanto possibile**. Le parole si colorano di verde mentre vengono cantate.
 - **Traduzione:** sotto la riga, in corsivo.
@@ -154,7 +154,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 
 ### Comandi
 
-<img src="docs/04-comandi.png" width="240" align="right" alt="Comandi">
+<img src="docs/04-comandi-t4.png" width="240" align="right" alt="Comandi">
 
 **In alto**
 - **Playlist in corso** (es. *Estate…*): toccala per scegliere un'altra playlist.
@@ -175,7 +175,7 @@ I comandi spariscono da soli dopo qualche secondo. Una linea verde sottile in fo
 
 ### Barra fissa
 
-<img src="docs/05-barra-fissa.png" width="240" align="right" alt="Barra in basso fissa">
+<img src="docs/05-barra-fissa-t4.png" width="240" align="right" alt="Barra in basso fissa">
 
 Con un **doppio tocco** sul testo la barra in basso resta sempre visibile. Il testo si sposta sopra la barra e si ridimensiona nello spazio che resta.
 
@@ -185,7 +185,7 @@ Un altro doppio tocco rimette la barra a comparsa. La scelta resta salvata.
 
 ### Playlist
 
-<img src="docs/07-playlist.png" width="240" align="right" alt="Scelta della playlist">
+<img src="docs/07-playlist-t4.png" width="240" align="right" alt="Scelta della playlist">
 
 Tocca il nome della playlist in alto per vedere tutte le tue playlist, con ricerca. Toccandone una, parte subito su Spotify.
 
@@ -195,7 +195,7 @@ Tocca il nome della playlist in alto per vedere tutte le tue playlist, con ricer
 
 ### Elenco brani e ordine
 
-<img src="docs/08-brani.png" width="240" align="right" alt="Elenco dei brani">
+<img src="docs/08-brani-t4.png" width="240" align="right" alt="Elenco dei brani">
 
 **Elenco brani:** l'icona a lista apre i brani della playlist in corso, con ricerca e durata. Il brano in riproduzione è in verde. Toccando un brano parte quello, e la playlist continua da lì.
 
@@ -211,7 +211,7 @@ Cambiando ordine, il brano in corso continua dal punto in cui eri. La scelta val
 
 ### Impostazioni
 
-<img src="docs/06-impostazioni.png" width="240" align="right" alt="Impostazioni">
+<img src="docs/06-impostazioni-t4.png" width="240" align="right" alt="Impostazioni">
 
 - **Riproduci su:** elenco dei dispositivi Spotify disponibili. Toccandone uno la musica passa lì.
   - **Questo dispositivo** (etichetta **TU**) è il telefono su cui stai usando l'app. Viene riconosciuto da solo, oppure lo indichi con *È questo*.
