@@ -128,6 +128,26 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #plSheet{position:absolute;left:50%;bottom:0;width:min(100%,520px);transform:translate(-50%,105%);z-index:21;
   background:var(--panel);border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;
   padding:10px 14px calc(10px + var(--sab));transition:transform .28s cubic-bezier(.2,.8,.2,1);height:82vh;display:flex;flex-direction:column}
+#trSheet{position:absolute;left:50%;bottom:0;width:min(100%,520px);transform:translate(-50%,105%);z-index:21;
+  background:var(--panel);border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;
+  padding:10px 14px calc(10px + var(--sab));transition:transform .28s cubic-bezier(.2,.8,.2,1);height:88vh;display:flex;flex-direction:column}
+body[data-sheet="tr"] #trSheet{transform:translate(-50%,0)}
+#trSheet h2{font-size:17px;margin:4px 4px 2px}
+#trSub{color:var(--muted);font-size:13px;margin:0 4px 10px}
+#trSearch{width:100%;padding:11px 14px;border-radius:12px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:16px;margin-bottom:8px;flex:none}
+#trList{flex:1;overflow:auto;margin:0 -4px}
+.tri{display:grid;grid-template-columns:2.2em 1fr auto;gap:10px;align-items:center;width:100%;padding:9px 8px;border-radius:12px;text-align:left}
+.tri:active{background:rgba(255,255,255,.08)}
+.tri .k{color:var(--muted);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.tri .n{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tri .o{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.tri>div{min-width:0}
+.tri .d{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.tri.cur .n,.tri.cur .k{color:var(--acc)}
+.chip{display:flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap;flex:none}
+.chip.on{background:rgba(30,215,96,.18);border-color:rgba(30,215,96,.45);color:var(--acc)}
+.chip:active{filter:brightness(1.3)}
+#hud .top .ib{flex:none;width:42px;height:42px}
 body[data-sheet] #sheetBg{opacity:1;pointer-events:auto}
 body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate(-50%,0)}
 .grab{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 10px;flex:none}
@@ -142,6 +162,7 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .pli .o{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pli>div{min-width:0}
 .pli.cur .n{color:var(--acc)}
+.pli .ph.liked{background:linear-gradient(135deg,#1ed760,#0b6b34);color:#fff}
 .empty{color:var(--muted);text-align:center;padding:30px 10px}
 .set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
 .set .l{font-size:15px}
@@ -205,7 +226,15 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
         <span id="plName">Scegli playlist</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
+      <button class="ib" id="trBtn" aria-label="Brani della playlist">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.2" fill="currentColor"/><circle cx="3.5" cy="12" r="1.2" fill="currentColor"/><circle cx="3.5" cy="18" r="1.2" fill="currentColor"/></svg>
+      </button>
       <div class="spacer"></div>
+      <button class="chip" id="orderBtn" aria-label="Ordine di riproduzione">
+        <svg id="icShuf" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+        <svg id="icAz" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3.5-10L10 18M4.3 14.5h4.4M14 8h6l-6 10h6"/></svg>
+        <span id="orderTxt">In ordine</span>
+      </button>
       <button class="ib" id="openSheet" aria-label="Impostazioni">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
       </button>
@@ -247,6 +276,13 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
     <div class="sheetbtns"><button class="btn install hidden">Installa l'app</button><button class="btn" id="fs">Schermo intero</button><button class="btn" id="logout">Esci</button></div>
     <div id="src"></div>
   </div>
+  <div id="trSheet" role="dialog" aria-label="Brani">
+    <div class="grab"></div>
+    <h2>Brani</h2>
+    <div id="trSub"></div>
+    <input id="trSearch" type="search" placeholder="Cerca un brano" autocomplete="off">
+    <div id="trList"></div>
+  </div>
   <div id="plSheet" role="dialog" aria-label="Playlist">
     <div class="grab"></div>
     <h2>Scegli una playlist</h2>
@@ -265,7 +301,7 @@ const store = {
   del(k) { try { localStorage.removeItem("kk_" + k); } catch (e) {} }
 };
 const REDIRECT = location.origin + location.pathname;
-const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative";
+const SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative user-library-read";
 const fmt = ms => { ms = Math.max(0, ms || 0); const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 /* ================= OAuth PKCE ================= */
@@ -327,7 +363,8 @@ async function api(path) {
 /* ================= Stato ================= */
 const S = { track: null, lines: null, words: null, sing: 1500, idx: -2, stanzas: [],
   basePos: 0, baseT: 0, playing: false, offset: store.get("off", 0), demo: false,
-  size: store.get("size", 10), trans: null, plain: null, holdUntil: 0 };
+  size: store.get("size", 10), trans: null, plain: null, holdUntil: 0,
+  mode: store.get("mode", null), shuffle: false, az: null, ctxUri: null, ctxType: null };
 const rawPos = () => S.basePos + (S.playing ? performance.now() - S.baseT : 0);
 const pos = () => rawPos() + S.offset;
 function setPlayhead(ms, playing, keepLine) { S.basePos = ms; S.baseT = performance.now(); if (playing !== undefined) S.playing = playing; if (!keepLine) S.idx = -2; }
@@ -341,7 +378,7 @@ async function poll() {
   try {
     const tok = await accessToken();
     const t0 = performance.now();
-    const r = await fetch("https://api.spotify.com/v1/me/player/currently-playing?additional_types=episode",
+    const r = await fetch("https://api.spotify.com/v1/me/player?additional_types=episode",
       { headers: { Authorization: "Bearer " + tok } });
     const tMid = (t0 + performance.now()) / 2;
     if (r.status === 401) { const t = store.get("tok", {}); t.exp = 0; store.set("tok", t); delay = 300; }
@@ -360,7 +397,8 @@ async function poll() {
 function onState(j, tMid) {
   const it = j && j.item;
   if (!it) { setNothing(); return 4000; }
-  const tr = { id: it.id || it.uri || it.name, name: it.name || "", type: it.type || j.currently_playing_type,
+  S.shuffle = !!j.shuffle_state; updateOrder();
+  const tr = { id: it.id || it.uri || it.name, uri: it.uri || "", name: it.name || "", type: it.type || j.currently_playing_type,
     artist: (it.artists || []).map(a => a.name).join(", ") || (it.show && it.show.name) || "",
     artist1: (it.artists && it.artists[0] && it.artists[0].name) || (it.show && it.show.name) || "",
     album: (it.album && it.album.name) || "", dur: it.duration_ms || 0 };
@@ -447,12 +485,17 @@ async function seekTo(ms) {
 
 /* ---- playlist ---- */
 let playlists = null; const plNames = new Map();
+const LIKED = "liked", LIKED_NAME = "Brani che mi piacciono";
 function setPlName(n) { $("#plName").textContent = n; }
 function updateContext(ctx, tr) {
   const uri = ctx && ctx.uri;
+  S.ctxType = ctx && ctx.type;
+  if (!uri) { // brani avviati come elenco (ordine per nome)
+    S.ctxUri = null;
+    setPlName(azActive() ? S.az.name : "Scegli playlist"); updateOrder(); return;
+  }
   if (uri === S.ctxUri) return;
   S.ctxUri = uri;
-  if (!ctx) return setPlName("Scegli playlist");
   if (ctx.type === "album") return setPlName("Album · " + (tr.album || ""));
   if (ctx.type === "artist") return setPlName("Artista · " + (tr.artist1 || ""));
   if (ctx.type !== "playlist") return setPlName("Scegli playlist");
@@ -472,6 +515,10 @@ async function loadPlaylists() {
     path = j && j.next ? j.next.replace("https://api.spotify.com/v1/", "") : null;
   }
   out.forEach(p => plNames.set(p.uri, p.name));
+  // i "Brani che mi piacciono" non sono una playlist per Spotify: li aggiungiamo in testa
+  let likedTotal = null;
+  try { const j = await api("me/tracks?limit=1"); likedTotal = j && j.total; } catch (e) {}
+  out.unshift({ uri: LIKED, name: LIKED_NAME, liked: true, images: [], owner: { display_name: "La tua libreria" }, items: { total: likedTotal } });
   return (playlists = out);
 }
 function renderPl() {
@@ -482,8 +529,8 @@ function renderPl() {
     const img = (p.images || []).filter(Boolean).slice(-1)[0];
     const n = ((p.items || p.tracks || {}).total);
     const sub = [(p.owner && p.owner.display_name) || "", n != null ? n + " brani" : ""].filter(Boolean).join(" · ");
-    return '<button class="pli' + (p.uri === S.ctxUri ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
-      + (img ? '<img loading="lazy" alt="" src="' + esc(img.url) + '">' : '<span class="ph">♪</span>')
+    return '<button class="pli' + (p.uri === S.ctxUri || (azActive() && p.uri === S.az.plUri) ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
+      + (p.liked ? '<span class="ph liked">♥</span>' : img ? '<img loading="lazy" alt="" src="' + esc(img.url) + '">' : '<span class="ph">♪</span>')
       + '<div><div class="n">' + esc(p.name) + '</div><div class="o">' + esc(sub) + "</div></div></button>";
   }).join("");
 }
@@ -496,9 +543,140 @@ async function openPlaylists() {
   catch (e) { $("#plList").innerHTML = '<p class="empty">Impossibile caricare le playlist (' + esc(e.message) + ").</p>"; }
 }
 async function choosePlaylist(uri, name) {
-  closeSheet(); setPlName(name); S.ctxUri = uri;
+  closeSheet(); setPlName(name);
   toast("Avvio “" + name + "”…");
-  if (await play({ context_uri: uri })) { S.holdUntil = 0; setTimeout(poll, 800); setTimeout(poll, 2000); }
+  let ok;
+  if (S.mode === "az") ok = await playAZ(uri, name);
+  else if (S.mode === "shuffle") ok = await playShuffle(uri, null, name);
+  else if (uri === LIKED) ok = await playList(uri, name, {});
+  else { S.az = null; ok = await play({ context_uri: uri }); }
+  if (ok) { S.holdUntil = 0; setTimeout(poll, 800); setTimeout(poll, 2000); }
+}
+
+/* ---- brani della playlist ---- */
+const plTracks = new Map(); // uri playlist -> elenco brani, oppure "na" se Spotify non li fornisce
+async function loadTracks(plUri) {
+  if (plTracks.has(plUri)) return plTracks.get(plUri);
+  const id = plUri.split(":").pop();
+  let out = [], path = plUri === LIKED ? "me/tracks?limit=50" : "playlists/" + encodeURIComponent(id) + "/items?limit=100";
+  try {
+    for (let n = 0; n < (plUri === LIKED ? 40 : 20) && path; n++) {
+      const j = await api(path);
+      for (const it of (j && j.items) || []) {
+        const t = it && (it.item || it.track);
+        if (!t || !t.uri || (t.type && t.type !== "track") || t.is_local) continue;
+        out.push({ uri: t.uri, name: t.name || "", artist: (t.artists || []).map(a => a.name).join(", "), dur: t.duration_ms || 0 });
+      }
+      path = j && j.next ? j.next.replace("https://api.spotify.com/v1/", "") : null;
+    }
+  } catch (e) {
+    if (!out.length) { if (/40[34]/.test(e.message)) { plTracks.set(plUri, "na"); return "na"; } throw e; }
+  }
+  const res = out.length ? out : "na";
+  plTracks.set(plUri, res); return res;
+}
+const sortAZ = arr => [...arr].sort((a, b) => a.name.localeCompare(b.name, "it", { sensitivity: "base", numeric: true }));
+function azActive() { return !!(S.az && !S.ctxUri && S.track && S.az.uris.has(S.track.uri)); }
+function currentPlaylist() {
+  if (azActive()) return { uri: S.az.plUri, name: S.az.name };
+  if (S.ctxType === "playlist" && S.ctxUri) return { uri: S.ctxUri, name: plNames.get(S.ctxUri) || $("#plName").textContent };
+  return null;
+}
+const NA_MSG = "Spotify mostra l'elenco dei brani solo per le playlist create da te.";
+// riproduce i brani come elenco: ordinati per nome (az) oppure nell'ordine originale
+async function playList(plUri, name, opt) {
+  opt = opt || {};
+  let arr;
+  try { arr = await loadTracks(plUri); } catch (e) { toast("Impossibile leggere i brani."); return false; }
+  if (arr === "na") { toast(NA_MSG + " Qui l'ordine per nome non è disponibile."); return false; }
+  const sorted = opt.az ? sortAZ(arr) : arr;
+  let posMs = opt.posMs || 0;
+  const found = opt.startUri ? sorted.findIndex(t => t.uri === opt.startUri) : -1;
+  if (found < 0) posMs = 0; // il brano in corso non è nell'elenco: si parte dal primo
+  let i = Math.max(0, found), list = sorted;
+  if (list.length > 500) { list = sorted.slice(i, i + 500); i = 0; } // limite di sicurezza della richiesta
+  await player("PUT", "shuffle?state=" + !!opt.shuffle, null, true);
+  S.az = { plUri, name, az: !!opt.az, uris: new Set(list.map(t => t.uri)) };
+  const body = { uris: list.map(t => t.uri), offset: { position: i } };
+  if (posMs) body.position_ms = Math.round(posMs);
+  const ok = await play(body);
+  if (ok) {
+    if (opt.shuffle) await player("PUT", "shuffle?state=true", null, true);
+    S.shuffle = !!opt.shuffle; setPlName(name); updateOrder();
+  }
+  return ok;
+}
+const playAZ = (plUri, name, startUri, posMs) => playList(plUri, name, { az: true, startUri, posMs });
+// riproduce la playlist in ordine casuale
+async function playShuffle(plUri, startUri, name) {
+  if (plUri === LIKED) return playList(plUri, name || LIKED_NAME, { shuffle: true, startUri });
+  await player("PUT", "shuffle?state=true", null, true);
+  const body = { context_uri: plUri }; if (startUri) body.offset = { uri: startUri };
+  const ok = await play(body);
+  if (ok) { S.az = null; await player("PUT", "shuffle?state=true", null, true); S.shuffle = true; updateOrder(); }
+  return ok;
+}
+function updateOrder() {
+  const t = S.shuffle ? "Casuale" : azActive() && S.az.az ? "A‑Z" : "In ordine";
+  $("#orderTxt").textContent = t;
+  $("#orderBtn").classList.toggle("on", t !== "In ordine");
+  $("#icShuf").classList.toggle("hidden", t === "A‑Z"); $("#icAz").classList.toggle("hidden", t !== "A‑Z");
+}
+// pulsante ordine: alterna tra per nome (A‑Z) e casuale
+async function toggleOrder() {
+  showHud();
+  if (S.demo) { toast("Nella demo non c'è una playlist."); return; }
+  if (!hasScopes()) { needLogin(); return; }
+  if (!S.shuffle) {
+    S.mode = "shuffle"; store.set("mode", S.mode);
+    if (await player("PUT", "shuffle?state=true", null, true) === true) { S.shuffle = true; updateOrder(); toast("Ordine casuale"); }
+    else toast("Avvia prima un brano su Spotify.");
+  } else {
+    S.mode = "az"; store.set("mode", S.mode);
+    const pl = currentPlaylist();
+    if (!pl) {
+      await player("PUT", "shuffle?state=false", null, true); S.shuffle = false; updateOrder();
+      toast("Scegli una playlist per ascoltarla in ordine per nome."); return;
+    }
+    if (await playAZ(pl.uri, pl.name, S.track && S.track.uri, S.track ? rawPos() : 0)) toast("Ordine per nome (A‑Z)");
+  }
+  S.holdUntil = 0; setTimeout(poll, 900);
+}
+let trCurPl = null;
+async function openTracks() {
+  if (S.demo) { toast("Nella demo non c'è una playlist: accedi con Spotify."); return; }
+  if (!hasScopes()) { needLogin(); return; }
+  const pl = currentPlaylist();
+  if (!pl) { toast("Scegli prima una playlist."); openPlaylists(); return; }
+  trCurPl = pl; openSheet("tr");
+  $("#trSub").textContent = pl.name; $("#trSearch").value = "";
+  $("#trList").innerHTML = '<p class="empty">Carico i brani…</p>';
+  try {
+    const arr = await loadTracks(pl.uri);
+    if (arr === "na") { $("#trList").innerHTML = '<p class="empty">' + NA_MSG + "</p>"; return; }
+    renderTracks(true);
+  } catch (e) { $("#trList").innerHTML = '<p class="empty">Impossibile caricare i brani (' + esc(e.message) + ").</p>"; }
+}
+function renderTracks(scroll) {
+  const arr = plTracks.get(trCurPl.uri); if (!Array.isArray(arr)) return;
+  const az = (azActive() && S.az.az) || S.mode === "az";
+  $("#trSub").textContent = trCurPl.name + " · " + arr.length + " brani" + (az ? " · ordine per nome" : "");
+  const q = $("#trSearch").value.trim().toLowerCase();
+  const list = (az ? sortAZ(arr) : arr).map((t, k) => ({ t, k })).filter(x => !q || (x.t.name + " " + x.t.artist).toLowerCase().includes(q));
+  if (!list.length) { $("#trList").innerHTML = '<p class="empty">Nessun brano trovato.</p>'; return; }
+  const curU = S.track && S.track.uri;
+  $("#trList").innerHTML = list.map(({ t, k }) =>
+    '<button class="tri' + (t.uri === curU ? " cur" : "") + '" data-uri="' + esc(t.uri) + '"><span class="k">' + (t.uri === curU ? "▶" : k + 1) + "</span>"
+    + '<div><div class="n">' + esc(t.name) + '</div><div class="o">' + esc(t.artist) + '</div></div><span class="d">' + fmt(t.dur) + "</span></button>").join("");
+  if (scroll) { const c = $("#trList .tri.cur"); if (c) c.scrollIntoView({ block: "center" }); }
+}
+async function chooseTrack(uri) {
+  const pl = trCurPl; closeSheet();
+  let ok;
+  if ((azActive() && S.az.az) || S.mode === "az") ok = await playAZ(pl.uri, pl.name, uri);
+  else if (pl.uri === LIKED) ok = await playList(pl.uri, pl.name, { startUri: uri, shuffle: S.shuffle });
+  else ok = await play({ context_uri: pl.uri, offset: { uri } });
+  if (ok) { S.holdUntil = 0; setTimeout(poll, 700); setTimeout(poll, 1800); }
 }
 function updatePlayIcon() {
   $("#icPause").classList.toggle("hidden", !S.playing);
@@ -805,6 +983,10 @@ $("#plBtn").onclick = openPlaylists;
 $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => { const b = e.target.closest(".pli"); if (b) choosePlaylist(b.dataset.uri, b.dataset.name); };
 $("#prevTr").onclick = () => skipTrack(-1);
+$("#trBtn").onclick = openTracks;
+$("#orderBtn").onclick = toggleOrder;
+$("#trSearch").oninput = () => renderTracks(false);
+$("#trList").onclick = e => { const b = e.target.closest(".tri"); if (b) chooseTrack(b.dataset.uri); };
 $("#nextTr").onclick = () => skipTrack(1);
 $("#sheetBg").onclick = closeSheet;
 $("#bigger").onclick = () => setSize(S.size + 1);
