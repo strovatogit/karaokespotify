@@ -186,6 +186,18 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
 .sw.on{background:var(--acc)}
 .sw.on::after{transform:translateX(20px)}
 .sheetbtns{display:flex;gap:10px;margin-top:12px}
+.devhead{display:flex;align-items:center;justify-content:space-between;padding-top:13px;border-top:1px solid var(--line)}
+.devhead .l{font-size:15px}
+.devhead button{font-size:13px;font-weight:600;color:var(--acc);padding:6px 4px}
+#devList{margin:6px -6px 4px}
+.dev{display:flex;gap:12px;align-items:center;width:100%;padding:9px 8px;border-radius:12px;text-align:left}
+.dev:active{background:rgba(255,255,255,.08)}
+.dev svg{flex:none;color:var(--muted)}
+.dev .n{font-size:15px;font-weight:600}
+.dev .o{font-size:12px;color:var(--muted);margin-top:1px}
+.dev.cur .n,.dev.cur svg{color:var(--acc)}
+.dev[disabled]{opacity:.4}
+.devmsg{color:var(--muted);font-size:13px;line-height:1.45;padding:6px 8px 10px;margin:0}
 .sheetbtns .btn{flex:1;text-align:center}
 #src{color:var(--muted);font-size:12px;margin-top:12px;text-align:center}
 </style>
@@ -279,6 +291,8 @@ body[data-sheet="set"] #sheet,body[data-sheet="pl"] #plSheet{transform:translate
   <div id="sheet" role="dialog" aria-label="Impostazioni">
     <div class="grab"></div>
     <h2>Impostazioni</h2>
+    <div class="devhead"><div class="l">Riproduci su</div><button id="devRefresh">Aggiorna</button></div>
+    <div id="devList"></div>
     <div class="set"><div class="l">Grandezza testo<small>Max = riempie lo schermo</small></div>
       <div class="step"><button id="smaller" aria-label="Più piccolo">−</button><span class="v" id="size">Max</span><button id="bigger" aria-label="Più grande">+</button></div></div>
     <div class="set"><div class="l">Sincronia<small>Se il testo arriva presto o tardi</small></div>
@@ -496,6 +510,44 @@ async function seekTo(ms) {
   const ok = await player("PUT", "seek?position_ms=" + Math.round(ms));
   if (!ok) setPlayhead(before);
   setTimeout(poll, 1600);
+}
+
+/* ---- dispositivi ---- */
+const DEV_TYPES = { smartphone: "Telefono", computer: "Computer", speaker: "Altoparlante", tv: "TV", tablet: "Tablet",
+  castvideo: "Chromecast", castaudio: "Chromecast audio", avr: "Amplificatore", stb: "Decoder TV", audiodongle: "Ricevitore audio",
+  gameconsole: "Console", automobile: "Auto", smartwatch: "Smartwatch" };
+function devIcon(type) {
+  const t = (type || "").toLowerCase(), a = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+  if (t === "smartphone" || t === "smartwatch") return a + '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18h2"/></svg>';
+  if (t === "computer" || t === "tablet") return a + '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
+  if (t === "tv" || t === "castvideo" || t === "stb") return a + '<rect x="2.5" y="5" width="19" height="12.5" rx="2"/><path d="M8 21h8"/></svg>';
+  return a + '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><circle cx="12" cy="14.5" r="3.2"/><circle cx="12" cy="7" r="1"/></svg>';
+}
+async function loadDevices() {
+  const box = $("#devList"), msg = t => { box.innerHTML = '<p class="devmsg">' + t + "</p>"; };
+  if (S.demo) return msg("Nella demo non ci sono dispositivi.");
+  if (!hasScopes()) return msg("Rifai l'accesso a Spotify per scegliere il dispositivo.");
+  if (!box.children.length) msg("Cerco i dispositivi…");
+  try {
+    const j = await api("me/player/devices"), d = (j && j.devices) || [];
+    if (!d.length) return msg("Nessun dispositivo trovato. Apri Spotify sul telefono, sul PC o sulle casse e premi Aggiorna.");
+    box.innerHTML = d.map(x => '<button class="dev' + (x.is_active ? " cur" : "") + '" data-id="' + esc(x.id || "") + '" data-name="' + esc(x.name) + '"'
+      + (x.is_restricted || !x.id ? " disabled" : "") + ">" + devIcon(x.type)
+      + '<div><div class="n">' + esc(x.name) + '</div><div class="o">' + esc(DEV_TYPES[(x.type || "").toLowerCase()] || x.type || "")
+      + (x.is_active ? " · in riproduzione" : "") + (x.is_restricted ? " · non controllabile" : "") + "</div></div></button>").join("")
+      + '<p class="devmsg">Non vedi un dispositivo? Apri Spotify su quel dispositivo e premi Aggiorna.</p>';
+  } catch (e) { msg("Impossibile leggere i dispositivi (" + esc(e.message) + ")."); }
+}
+async function transferTo(id, name) {
+  if (!hasScopes()) { needLogin(); return; }
+  try {
+    const tok = await accessToken();
+    const r = await fetch("https://api.spotify.com/v1/me/player", { method: "PUT",
+      headers: { Authorization: "Bearer " + tok, "Content-Type": "application/json" },
+      body: JSON.stringify({ device_ids: [id], play: S.playing || !S.track }) });
+    if (r.ok) { toast("Ora suona su " + name); setTimeout(loadDevices, 1500); setTimeout(poll, 1200); }
+    else toast("Non riesco a passare a " + name + " (" + r.status + ").");
+  } catch (e) { toast("Connessione non riuscita."); }
 }
 
 /* ---- playlist ---- */
@@ -1008,7 +1060,9 @@ $("#copyRedir").onclick = e => {
 $("#play").onclick = () => { togglePlay(); showHud(); };
 $("#prevSt").onclick = () => jumpStanza(-1);
 $("#nextSt").onclick = () => jumpStanza(1);
-$("#openSheet").onclick = () => openSheet("set");
+$("#openSheet").onclick = () => { openSheet("set"); loadDevices(); };
+$("#devRefresh").onclick = loadDevices;
+$("#devList").onclick = e => { const b = e.target.closest(".dev"); if (b && !b.disabled) transferTo(b.dataset.id, b.dataset.name); };
 $("#plBtn").onclick = openPlaylists;
 $("#plSearch").oninput = renderPl;
 $("#plList").onclick = e => { const b = e.target.closest(".pli"); if (b) choosePlaylist(b.dataset.uri, b.dataset.name); };
@@ -1102,7 +1156,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 01:25";
+const APP_VERSION = "27/11/2026 09:55";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
