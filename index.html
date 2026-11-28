@@ -542,7 +542,7 @@ function onState(j, tMid) {
   const it = j && j.item;
   if (!it) { setNothing(); return 4000; }
   S.shuffle = !!j.shuffle_state; updateOrder();
-  const tr = { id: it.id || it.uri || it.name, uri: it.uri || "", name: it.name || "", type: it.type || j.currently_playing_type,
+  const tr = { id: it.id || it.uri || it.name, uri: it.uri || "", linked: (it.linked_from && it.linked_from.uri) || "", name: it.name || "", type: it.type || j.currently_playing_type,
     artist: (it.artists || []).map(a => a.name).join(", ") || (it.show && it.show.name) || "",
     artist1: (it.artists && it.artists[0] && it.artists[0].name) || (it.show && it.show.name) || "",
     album: (it.album && it.album.name) || "", dur: it.duration_ms || 0 };
@@ -551,7 +551,14 @@ function onState(j, tMid) {
     S.basePos = j.progress_ms || 0; S.baseT = tMid; S.playing = !!j.is_playing;
   }
   if (!S.track || S.track.id !== tr.id) { S.track = tr; newTrack(); }
-  S.track.dur = tr.dur;
+  S.track.dur = tr.dur; S.track.linked = tr.linked;
+  // elenco avviato dall'app (ordine per titolo/cantante, radio, preferiti): resta valido finché suonano i suoi brani.
+  // Non si guarda il "contesto" riportato da Spotify, che dopo l'avvio può restare quello vecchio per un po'.
+  if (S.az) {
+    const inSet = S.az.uris.has(tr.uri) || (tr.linked && S.az.uris.has(tr.linked));
+    if (inSet) S.az.miss = 0;
+    else if (performance.now() - S.az.t0 > 6000 && ++S.az.miss >= 2) { S.az = null; S.ctxUri = undefined; }
+  }
   updateContext(j.context, tr);
   updatePlayIcon();
   let d = S.playing ? 2500 : 4000;
@@ -833,7 +840,7 @@ async function startRadio() {
     plTracks.set(RADIO, list); plNames.set(RADIO, name);
     S.radio = { name, uris: list.map(t => t.uri), saved: false };
     await player("PUT", "shuffle?state=false", null, true);
-    S.az = { plUri: RADIO, name, az: null, uris: new Set(list.map(t => t.uri)) };
+    S.az = { plUri: RADIO, name, az: null, uris: new Set(list.map(t => t.uri)), t0: performance.now(), miss: 0 };
     // continua il brano in corso dal punto in cui è, poi i brani simili
     const ok = await play({ uris: list.map(t => t.uri), offset: { position: 0 }, position_ms: Math.round(rawPos()) });
     if (ok) { S.shuffle = false; setPlName(name); updateOrder(); toast("Radio pronta: " + found.length + " brani simili"); S.holdUntil = 0; setTimeout(poll, 800); }
@@ -844,10 +851,8 @@ function setPlName(n) { $("#plName").textContent = n; }
 function updateContext(ctx, tr) {
   const uri = ctx && ctx.uri;
   S.ctxType = ctx && ctx.type;
-  if (!uri) { // brani avviati come elenco (ordine per nome)
-    S.ctxUri = null;
-    setPlName(azActive() ? S.az.name : LIKED_NAME); updateOrder(); return;
-  }
+  if (azActive()) { S.ctxUri = "__queue"; setPlName(S.az.name); updateOrder(); return; } // elenco avviato dall'app
+  if (!uri) { S.ctxUri = null; setPlName(LIKED_NAME); updateOrder(); return; }
   if (uri === S.ctxUri) return;
   S.ctxUri = uri;
   if (ctx.type === "album") return setPlName("Album · " + (tr.album || ""));
@@ -1009,7 +1014,7 @@ const sortBy = (arr, key) => [...arr].sort((a, b) => key === "artist" ? (cmp(a.a
 const ORDERS = { name: "Titolo A‑Z", artist: "Cantante A‑Z" };
 // ordinamento in uso: quello dei brani in riproduzione, altrimenti quello scelto per le prossime playlist
 function sortKey() { if (azActive()) return S.az.az || null; return (S.mode === "name" || S.mode === "artist") ? S.mode : null; }
-function azActive() { return !!(S.az && !S.ctxUri && S.track && S.az.uris.has(S.track.uri)); }
+function azActive() { return !!S.az; }
 function currentPlaylist() {
   if (azActive()) return { uri: S.az.plUri, name: S.az.name };
   if (S.ctxType === "playlist" && S.ctxUri) return { uri: S.ctxUri, name: plNames.get(S.ctxUri) || $("#plName").textContent };
@@ -1030,7 +1035,7 @@ async function playList(plUri, name, opt) {
   let i = Math.max(0, found), list = sorted;
   if (list.length > 500) { list = sorted.slice(i, i + 500); i = 0; } // limite di sicurezza della richiesta
   await player("PUT", "shuffle?state=" + !!opt.shuffle, null, true);
-  S.az = { plUri, name, az: opt.az || null, uris: new Set(list.map(t => t.uri)) };
+  S.az = { plUri, name, az: opt.az || null, uris: new Set(list.map(t => t.uri)), t0: performance.now(), miss: 0 };
   const body = { uris: list.map(t => t.uri), offset: { position: i } };
   if (posMs) body.position_ms = Math.round(posMs);
   const ok = await play(body);
@@ -1063,7 +1068,9 @@ async function toggleOrder() {
   showHud();
   if (S.demo) { toast("Nella demo non c'è una playlist."); return; }
   if (!hasScopes()) { needLogin(); return; }
-  const o = orderState(), next = o === "name" ? "artist" : o === "artist" ? "shuffle" : "name";
+  const o = orderState(), cur = o !== "plain" ? o : (S.lastTry || "plain");
+  const next = cur === "name" ? "artist" : cur === "artist" ? "shuffle" : "name";
+  S.lastTry = next;
   S.mode = next; store.set("mode", next);
   if (next === "shuffle") {
     if (await player("PUT", "shuffle?state=true", null, true) === true) { S.shuffle = true; updateOrder(); toast("Ordine casuale"); }
@@ -1138,8 +1145,8 @@ async function openTracks() {
 }
 function renderTracks(scroll) {
   const arr = plTracks.get(trCurPl.uri); if (!Array.isArray(arr)) return;
-  const az = sortKey();
-  $("#trSub").textContent = trCurPl.name + " · " + arr.length + " brani" + (az ? " · " + ORDERS[az] : "");
+  const az = S.shuffle ? null : sortKey();
+  $("#trSub").textContent = trCurPl.name + " · " + arr.length + " brani" + (az ? " · " + ORDERS[az] : S.shuffle ? " · ordine casuale" : "");
   const q = $("#trSearch").value.trim().toLowerCase();
   const list = (az ? sortBy(arr, az) : arr).map((t, k) => ({ t, k })).filter(x => !q || (x.t.name + " " + x.t.artist).toLowerCase().includes(q));
   if (!list.length) { $("#trList").innerHTML = '<p class="empty">Nessun brano trovato.</p>'; return; }
@@ -1754,7 +1761,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 08:50";
+const APP_VERSION = "28/11/2026 09:00";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
