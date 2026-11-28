@@ -91,6 +91,8 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #kHead .t{font-size:14px;font-weight:700;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #kHead .a{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.karaoke #kHead{display:block}
+#kTitle{display:inline-block;max-width:92%;pointer-events:auto;cursor:pointer;padding:4px 12px;border-radius:12px}
+#kTitle:active{background:rgba(255,255,255,.1)}
 body.karaoke #hud{display:none}
 body.karaoke #stage{padding-top:calc(52px + var(--sat))}
 body.karaoke #plain{padding-top:calc(60px + var(--sat))}
@@ -346,7 +348,7 @@ body.notr #trLangRow{opacity:.45}
   <div id="msg" class="hidden"><div class="big"></div><div class="small"></div></div>
   <div id="mini"><i></i></div>
   <div id="zoomTip"></div>
-  <div id="kHead"><div class="t"></div><div class="a"></div></div>
+  <div id="kHead"><div id="kTitle" role="button" aria-label="Torna alla modalità normale"><div class="t"></div><div class="a"></div></div></div>
 
   <div id="hud">
     <div class="top">
@@ -1422,7 +1424,7 @@ function updateSyncBtn() { $("#syncBtn").classList.toggle("hidden", !S.lines); }
 function setKaraoke(on, quiet) {
   document.body.classList.toggle("karaoke", on); document.body.classList.toggle("pinned", !on); store.set("karaoke", on);
   closeSheet(); userScrollAt = -1e9; applyView(); requestAnimationFrame(fitAll);
-  if (!quiet) toast(on ? "Modalità karaoke: doppio tocco sullo schermo per tornare alla modalità normale." : "Modalità normale");
+  if (!quiet) toast(on ? "Modalità karaoke: tocca il titolo in alto o fai doppio tocco per tornare alla modalità normale." : "Modalità normale");
 }
 function renderFull() {
   const p = $("#plain"); p.classList.add("full");
@@ -1678,6 +1680,7 @@ $("#like").onclick = toggleLike;
 $("#radioBtn").onclick = () => { showHud(); startRadio(); };
 $("#srBtn").onclick = openSearch;
 $("#syncBtn").onclick = () => setKaraoke(true);
+$("#kTitle").onclick = () => setKaraoke(false); // tocco sul titolo in alto: torna alla modalità normale
 $("#srClose").onclick = closeSheet;
 $("#srInput").oninput = () => { clearTimeout(srTimer); srTimer = setTimeout(() => runSearch(false), 350); };
 $("#srInput").onkeydown = e => { if (e.key === "Enter") { clearTimeout(srTimer); runSearch(false); e.target.blur(); } };
@@ -1837,7 +1840,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 09:40";
+const APP_VERSION = "28/11/2026 09:45";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {

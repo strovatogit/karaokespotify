@@ -165,7 +165,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 | **Scorrimento** verso l'alto o verso il basso | Strofa successiva o precedente (sul PC: rotella del mouse) |
 | **Scorrimento** a sinistra o a destra | Riga successiva o precedente |
 | **Pizzico** con due dita | Allarghi per ingrandire il testo, stringi per rimpicciolirlo (da 1/10 a Max) |
-| **Doppio tocco** (modalità karaoke) | Torna alla modalità normale |
+| **Doppio tocco**, o tocco sul titolo in alto (modalità karaoke) | Torna alla modalità normale |
 
 ### Comandi
 
@@ -203,7 +203,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 - Le barre spariscono e resta il testo sincronizzato riga per riga, il più grande possibile.
 - In alto compaiono in piccolo titolo e autore del brano. In fondo una linea verde sottile mostra l'avanzamento.
 - Gli scorrimenti e i tocchi sulle righe vicine continuano a funzionare.
-- Per tornare alla modalità normale basta un **doppio tocco** sullo schermo.
+- Per tornare alla modalità normale basta un **doppio tocco** sullo schermo, oppure un tocco sul **titolo in alto**.
 
 La modalità scelta resta salvata.
 
