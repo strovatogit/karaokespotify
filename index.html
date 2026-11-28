@@ -1165,14 +1165,17 @@ function renderTracks(scroll) {
   const q = $("#trSearch").value.trim().toLowerCase();
   const list = (az ? sortBy(arr, az) : arr).map((t, k) => ({ t, k })).filter(x => !q || (x.t.name + " " + x.t.artist).toLowerCase().includes(q));
   if (!list.length) { $("#trList").innerHTML = '<p class="empty">Nessun brano trovato.</p>'; return; }
-  const curU = S.track && S.track.uri;
+  const curU = S.track && S.track.uri, curL = S.track && S.track.linked; // anche le versioni sostituite da Spotify
+  const isCur = u => !!u && (u === curU || u === curL);
   $("#trList").innerHTML = list.map(({ t, k }) =>
-    '<button class="tri' + (t.uri === curU ? " cur" : "") + '" data-uri="' + esc(t.uri) + '"><span class="k">' + (t.uri === curU ? "▶" : k + 1) + "</span>"
+    '<button class="tri' + (isCur(t.uri) ? " cur" : "") + '" data-uri="' + esc(t.uri) + '"><span class="k">' + (isCur(t.uri) ? "▶" : k + 1) + "</span>"
     + '<div><div class="n">' + esc(t.name) + '</div><div class="o">' + esc(t.artist) + '</div></div><span class="d">' + fmt(t.dur) + "</span></button>").join("");
   if (scroll) { const c = $("#trList .tri.cur"); if (c) c.scrollIntoView({ block: "center" }); }
 }
 async function chooseTrack(uri) {
-  const pl = trCurPl; closeSheet();
+  const pl = trCurPl; // l'elenco resta aperto: il brano scelto viene evidenziato subito
+  document.querySelectorAll("#trList .tri.cur").forEach(r => r.classList.remove("cur"));
+  const row = [...document.querySelectorAll("#trList .tri")].find(r => r.dataset.uri === uri); if (row) row.classList.add("cur");
   let ok;
   if (sortKey()) ok = await playAZ(pl.uri, pl.name, uri, 0, sortKey());
   // brani preferiti e radio non sono playlist Spotify: si riproducono come elenco di brani
@@ -1358,6 +1361,7 @@ async function toggleLike() {
 async function newTrack() {
   const tr = S.track;
   setTrackInfo(tr.name, tr.artist); checkLiked();
+  if (document.body.dataset.sheet === "tr" && trCurPl) renderTracks(false); // aggiorna il brano evidenziato nell'elenco aperto
   setSrc(""); S.trans = null;
   if (tr.type === "episode") return showMsg(tr.name, "Podcast: nessun testo");
   showMsg("♪", "Cerco il testo…");
@@ -1777,7 +1781,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 09:10";
+const APP_VERSION = "28/11/2026 09:15";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
