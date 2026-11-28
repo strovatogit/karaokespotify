@@ -15,9 +15,9 @@ Web app (PWA) che mostra **in stile karaoke il testo sincronizzato** del brano c
 **Indirizzo:** https://strovatogit.github.io/karaokespotify/
 
 <p align="center">
-  <img src="docs/02-karaoke-verticale-v2.png" width="260" alt="Testo karaoke in verticale">
+  <img src="docs/02-karaoke-verticale-v3.png" width="260" alt="Testo karaoke in verticale">
   &nbsp;
-  <img src="docs/03-karaoke-orizzontale-v2.png" width="520" alt="Testo karaoke in orizzontale">
+  <img src="docs/03-karaoke-orizzontale-v3.png" width="520" alt="Testo karaoke in orizzontale">
 </p>
 
 > Gli screenshot usano dati di esempio: brani, testi e playlist sono inventati.
@@ -120,7 +120,7 @@ python -m http.server 8000
 
 ### 3. Primo accesso
 
-<img src="docs/01-configurazione-v2.png" width="260" align="right" alt="Schermata di configurazione">
+<img src="docs/01-configurazione-v3.png" width="260" align="right" alt="Schermata di configurazione">
 
 1. Apri l'indirizzo dell'app.
 2. La pagina mostra l'indirizzo esatto da usare come Redirect URI, con un pulsante per copiarlo.
@@ -144,7 +144,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 
 ### Testo karaoke
 
-<img src="docs/02-karaoke-verticale-v2.png" width="240" align="right" alt="Karaoke in verticale">
+<img src="docs/02-karaoke-verticale-v3.png" width="240" align="right" alt="Karaoke in verticale">
 
 - **Riga corrente:** è al centro, **grande quanto possibile**. Le parole si colorano di verde mentre vengono cantate.
 - **Traduzione:** sotto la riga, in corsivo, nella lingua scelta nelle impostazioni.
@@ -169,17 +169,16 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 
 ### Comandi
 
-<img src="docs/04-comandi-v2.png" width="240" align="right" alt="Comandi">
+<img src="docs/04-comandi-v3.png" width="240" align="right" alt="Comandi">
 
 **In alto**
 - **Playlist in corso** (es. *Estate…*): toccala per scegliere un'altra playlist.
-- **Modalità karaoke** (pulsante verde con il microfono): compare solo con i testi sincronizzati.
 - **Cerca** (lente): cerca un brano in tutto il catalogo Spotify.
 - **Elenco brani** (icona a lista).
 - **Impostazioni** (icona a cursori).
 
 **In basso**
-- Titolo e artista del brano. A sinistra c'è il pulsante **📻 radio**, che crea la radio del brano in ascolto (vedi [Playlist](#playlist)). A destra c'è il **cuore** ♡ per aggiungerlo ai *Brani che mi piacciono* (diventa verde ♥ se c'è già; toccalo di nuovo per toglierlo).
+- Titolo e artista del brano: se il testo è sincronizzato c'è l'icona verde 🎤 e **toccando il titolo** si entra nella modalità karaoke. A sinistra c'è il pulsante **📻 radio**, che crea la radio del brano in ascolto (vedi [Playlist](#playlist)). A destra c'è il **cuore** ♡ per aggiungerlo ai *Brani che mi piacciono* (diventa verde ♥ se c'è già; toccalo di nuovo per toglierlo).
 - Barra di avanzamento: toccala o trascinala per spostarti nel brano.
 - Pulsanti, da sinistra: **⏮ brano**, **⏪ strofa**, **play/pausa**, **strofa ⏩**, **brano ⏭**.
 
@@ -190,7 +189,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 
 ### Modalità normale e modalità karaoke
 
-<img src="docs/05-modalita-normale-v2.png" width="240" align="right" alt="Modalità normale">
+<img src="docs/05-modalita-normale-v3.png" width="240" align="right" alt="Modalità normale">
 
 **Modalità normale.** È quella di partenza.
 
@@ -198,7 +197,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 - I testi sincronizzati si vedono interi da scorrere. La riga cantata è evidenziata in verde e resta al centro.
 - Se scorri tu il testo, lo scorrimento automatico si ferma per qualche secondo. Toccando una riga il brano salta lì.
 
-**Modalità karaoke** (pulsante **verde con il microfono** in alto a sinistra, presente solo con i testi sincronizzati).
+**Modalità karaoke.** Quando il testo è sincronizzato, accanto al titolo del brano (nella barra in basso) compare un'icona verde con il microfono; **tocca il titolo** per entrare.
 
 - Le barre spariscono e resta il testo sincronizzato riga per riga, il più grande possibile.
 - In alto compaiono in piccolo titolo e autore del brano. In fondo una linea verde sottile mostra l'avanzamento.
@@ -211,7 +210,7 @@ La modalità scelta resta salvata.
 
 ### Playlist
 
-<img src="docs/07-playlist-v2.png" width="240" align="right" alt="Scelta della playlist">
+<img src="docs/07-playlist-v3.png" width="240" align="right" alt="Scelta della playlist">
 
 Tocca il nome della playlist in alto per vedere tutte le tue playlist, con ricerca. Toccandone una, parte subito su Spotify.
 
@@ -250,7 +249,7 @@ Sul PC la ricerca si apre anche con il tasto `/`.
 
 ### Elenco brani e ordine
 
-<img src="docs/08-brani-v2.png" width="240" align="right" alt="Elenco dei brani">
+<img src="docs/08-brani-v3.png" width="240" align="right" alt="Elenco dei brani">
 
 **Elenco brani:** l'icona a lista apre i brani della playlist in corso, con ricerca e durata. Il brano in riproduzione è in verde. Toccando un brano parte quello, e la playlist continua da lì.
 
@@ -266,7 +265,7 @@ Cambiando ordine, il brano in corso continua dal punto in cui eri. La scelta val
 
 ### Impostazioni
 
-<img src="docs/06-impostazioni-v2.png" width="240" align="right" alt="Impostazioni">
+<img src="docs/06-impostazioni-v3.png" width="240" align="right" alt="Impostazioni">
 
 - **Riproduci su:** elenco dei dispositivi Spotify disponibili. Toccandone uno la musica passa lì.
   - **Questo dispositivo** (etichetta **TU**) è il telefono su cui stai usando l'app. Viene riconosciuto da solo, oppure lo indichi con *È questo*.

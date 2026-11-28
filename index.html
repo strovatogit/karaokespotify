@@ -85,9 +85,12 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #plain.full .pl.now .tr{color:rgba(255,255,255,.75)}
 #plain.full .gap{height:.6em}
 /* pulsante modalità karaoke: verde e più grande, per farlo notare */
-#hud .top #syncBtn{order:-1;width:46px;height:46px;background:var(--acc);color:#000;box-shadow:0 0 0 4px rgba(30,215,96,.18),0 4px 16px rgba(30,215,96,.35)}
-#hud .top #syncBtn:active{transform:scale(.94);background:#19c556}
-#hud .top #syncBtn svg{width:26px;height:26px}
+/* testo sincronizzabile: icona microfono verde accanto al titolo; tocco sul titolo = modalità karaoke */
+#kIco{display:none;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#000;align-items:center;justify-content:center;
+  vertical-align:-4px;margin-right:7px;box-shadow:0 0 0 3px rgba(30,215,96,.2)}
+body.syncable #kIco{display:inline-flex}
+body.syncable #trk{cursor:pointer;border-radius:12px}
+body.syncable #trk:active{background:rgba(255,255,255,.08)}
 /* modalità karaoke: niente barre, solo il testo sincronizzato e in alto titolo e autore in piccolo */
 #kHead{position:absolute;left:0;right:0;top:0;z-index:5;display:none;text-align:center;pointer-events:none;
   padding:calc(10px + var(--sat)) 16px 0;line-height:1.3}
@@ -99,7 +102,7 @@ body.karaoke #kHead{display:block}
 body.karaoke #hud{display:none}
 body.karaoke #stage{padding-top:calc(52px + var(--sat))}
 body.karaoke #plain{padding-top:calc(60px + var(--sat))}
-#syncBtn.hidden{display:none}
+
 #plain .tr{font-size:.6em;margin-top:.15em}
 #zoomTip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;pointer-events:none;background:rgba(20,22,27,.92);border:1px solid var(--line);border-radius:16px;padding:12px 18px;font-size:18px;font-weight:700;opacity:0;transition:opacity .2s}
 #zoomTip.show{opacity:1}
@@ -360,9 +363,6 @@ body.notr #trLangRow{opacity:.45}
         <span id="plName">Brani che mi piacciono</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      <button class="ib hidden" id="syncBtn" aria-label="Modalità karaoke">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>
-      </button>
       <button class="ib" id="srBtn" aria-label="Cerca un brano">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
       </button>
@@ -379,7 +379,7 @@ body.notr #trLangRow{opacity:.45}
         <button id="radioBtn" class="hidden" aria-label="Crea la radio di questo brano">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7M5.6 18.4a9 9 0 0 1 0-12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg>
         </button>
-        <div id="trk"><div class="t"></div><div class="a"></div></div>
+        <div id="trk" aria-label="Titolo del brano"><div class="t"><span id="kIco" title="Testo sincronizzato: tocca il titolo per la modalità karaoke"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></span><span class="tt"></span></div><div class="a"></div></div>
         <button id="like" class="hidden" aria-label="Aggiungi ai brani che ti piacciono">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.3 4.5 6.8 4.5c2.1 0 3.6 1.2 5.2 3 1.6-1.8 3.1-3 5.2-3 3.5 0 5.4 3.5 4.1 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>
         </button>
@@ -1402,7 +1402,7 @@ async function newTrack() {
 }
 
 /* ================= Visualizzazione ================= */
-function setTrackInfo(t, a) { $("#trk .t").textContent = t; $("#trk .a").textContent = a; $("#kHead .t").textContent = t; $("#kHead .a").textContent = a; }
+function setTrackInfo(t, a) { $("#trk .tt").textContent = t; $("#trk .a").textContent = a; $("#kHead .t").textContent = t; $("#kHead .a").textContent = a; }
 function setSrc(s) { srcBase = s; $("#src").textContent = s; }
 function setMode(m) {
   $("#stage").style.visibility = m === "lines" ? "visible" : "hidden";
@@ -1423,7 +1423,7 @@ function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; S.songFit = nul
 /* testo sincronizzato mostrato tutto intero, come quelli non sincronizzati (pulsante con le frecce circolari) */
 const karaoke = () => document.body.classList.contains("karaoke");
 const fullView = () => !karaoke(); // modalità normale: testo completo con la riga cantata evidenziata
-function updateSyncBtn() { $("#syncBtn").classList.toggle("hidden", !S.lines); }
+function updateSyncBtn() { document.body.classList.toggle("syncable", !!S.lines); }
 function setKaraoke(on, quiet) {
   document.body.classList.toggle("karaoke", on); document.body.classList.toggle("pinned", !on); store.set("karaoke", on);
   closeSheet(); userScrollAt = -1e9; applyView(); requestAnimationFrame(fitAll);
@@ -1682,7 +1682,7 @@ $("#trBtn").onclick = openTracks;
 $("#like").onclick = toggleLike;
 $("#radioBtn").onclick = () => { showHud(); startRadio(); };
 $("#srBtn").onclick = openSearch;
-$("#syncBtn").onclick = () => setKaraoke(true);
+$("#trk").onclick = () => { if (S.lines) setKaraoke(true); }; // tocco sul titolo: modalità karaoke (solo testi sincronizzati)
 $("#kTitle").onclick = () => setKaraoke(false); // tocco sul titolo in alto: torna alla modalità normale
 $("#srClose").onclick = closeSheet;
 $("#srInput").oninput = () => { clearTimeout(srTimer); srTimer = setTimeout(() => runSearch(false), 350); };
@@ -1843,7 +1843,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 10:00";
+const APP_VERSION = "28/11/2026 10:10";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
