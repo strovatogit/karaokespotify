@@ -188,6 +188,7 @@ body[data-sheet="tr"] #trSheet,body[data-sheet="sr"] #srSheet{transform:translat
 .sri .q:active{background:rgba(30,215,96,.15)}
 #srMore{display:block;margin:10px auto;font-size:14px;font-weight:600;color:var(--acc);padding:8px 14px}
 #trSheet h2{font-size:17px;margin:4px 4px 2px}
+.trhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-right:4px}
 #trSub{color:var(--muted);font-size:13px;margin:0 4px 10px}
 #trSearch{width:100%;padding:11px 14px;border-radius:12px;border:1px solid #2a2d35;background:#0e1014;color:#fff;font:inherit;font-size:16px;margin-bottom:8px;flex:none}
 #trList{flex:1;overflow:auto;margin:0 -4px}
@@ -206,8 +207,7 @@ body[data-sheet="tr"] #trSheet,body[data-sheet="sr"] #srSheet{transform:translat
 @media (max-width:440px){
   #hud .top{gap:4px;padding-left:calc(10px + var(--sal));padding-right:calc(6px + var(--sar))}
   #hud .top .ib{width:38px;height:40px}
-  .chip{padding:0 9px;font-size:12px}
-  .chip svg{display:none}
+
   .pill{padding:8px 9px;gap:6px}
 }
 body[data-sheet] #sheetBg{opacity:1;pointer-events:auto}
@@ -346,11 +346,6 @@ body.notr #trLangRow{opacity:.45}
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.2" fill="currentColor"/><circle cx="3.5" cy="12" r="1.2" fill="currentColor"/><circle cx="3.5" cy="18" r="1.2" fill="currentColor"/></svg>
       </button>
       <div class="spacer"></div>
-      <button class="chip" id="orderBtn" aria-label="Ordine di riproduzione">
-        <svg id="icShuf" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-        <svg id="icAz" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3.5-10L10 18M4.3 14.5h4.4M14 8h6l-6 10h6"/></svg>
-        <span id="orderTxt">In ordine</span>
-      </button>
       <button class="ib" id="openSheet" aria-label="Impostazioni">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
       </button>
@@ -418,7 +413,11 @@ body.notr #trLangRow{opacity:.45}
   </div>
   <div id="trSheet" role="dialog" aria-label="Brani">
     <div class="grab"></div>
-    <h2>Brani</h2>
+    <div class="trhead"><h2>Brani</h2><button class="chip" id="orderBtn" aria-label="Ordine di riproduzione">
+        <svg id="icShuf" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+        <svg id="icAz" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l3.5-10L10 18M4.3 14.5h4.4M14 8h6l-6 10h6"/></svg>
+        <span id="orderTxt">In ordine</span>
+      </button></div>
     <div id="trSub"></div>
     <input id="trSearch" type="search" placeholder="Cerca un brano" autocomplete="off">
     <div id="trList"></div>
@@ -1076,6 +1075,7 @@ async function toggleOrder() {
     if (await playAZ(pl.uri, pl.name, S.track.uri, rawPos(), next)) toast("Ordine: " + ORDERS[next]);
   }
   S.holdUntil = 0; setTimeout(poll, 900);
+  if (document.body.dataset.sheet === "tr") renderTracks(true); // l'elenco si riordina subito
 }
 /* ---- ricerca di un brano nel catalogo Spotify ---- */
 let srTimer = null, srQuery = "", srOffset = 0, srSeq = 0;
@@ -1754,7 +1754,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 08:45";
+const APP_VERSION = "28/11/2026 08:50";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {

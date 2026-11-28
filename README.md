@@ -175,7 +175,6 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 - **Playlist in corso** (es. *Estate…*): toccala per scegliere un'altra playlist.
 - **Cerca** (lente): cerca un brano in tutto il catalogo Spotify.
 - **Elenco brani** (icona a lista).
-- **Ordine:** *In ordine*, *Titolo*, *Cantante* o *Casuale*.
 - **Impostazioni** (icona a cursori).
 
 **In basso**
@@ -241,7 +240,7 @@ Sul PC la ricerca si apre anche con il tasto `/`.
 
 **Elenco brani:** l'icona a lista apre i brani della playlist in corso, con ricerca e durata. Il brano in riproduzione è in verde. Toccando un brano parte quello, e la playlist continua da lì.
 
-**Ordine:** il pulsante in alto gira tra tre modalità.
+**Ordine:** il pulsante in alto a destra nella schermata dell'elenco brani gira tra tre modalità.
 
 - **Titolo:** brani in ordine alfabetico per titolo.
 - **Cantante:** in ordine alfabetico per artista, poi per titolo.
