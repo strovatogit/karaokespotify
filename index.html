@@ -85,6 +85,15 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #plain.full .pl.now .tr{color:rgba(255,255,255,.75)}
 #plain.full .gap{height:.6em}
 #syncBtn.on{color:var(--acc)}
+/* modalità karaoke: niente barre, solo il testo sincronizzato e in alto titolo e autore in piccolo */
+#kHead{position:absolute;left:0;right:0;top:0;z-index:5;display:none;text-align:center;pointer-events:none;
+  padding:calc(10px + var(--sat)) 16px 0;line-height:1.3}
+#kHead .t{font-size:14px;font-weight:700;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#kHead .a{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.karaoke #kHead{display:block}
+body.karaoke #hud{display:none}
+body.karaoke #stage{padding-top:calc(52px + var(--sat))}
+body.karaoke #plain{padding-top:calc(60px + var(--sat))}
 #syncBtn.hidden{display:none}
 #plain .tr{font-size:.6em;margin-top:.15em}
 #zoomTip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;pointer-events:none;background:rgba(20,22,27,.92);border:1px solid var(--line);border-radius:16px;padding:12px 18px;font-size:18px;font-weight:700;opacity:0;transition:opacity .2s}
@@ -337,6 +346,7 @@ body.notr #trLangRow{opacity:.45}
   <div id="msg" class="hidden"><div class="big"></div><div class="small"></div></div>
   <div id="mini"><i></i></div>
   <div id="zoomTip"></div>
+  <div id="kHead"><div class="t"></div><div class="a"></div></div>
 
   <div id="hud">
     <div class="top">
@@ -345,9 +355,8 @@ body.notr #trLangRow{opacity:.45}
         <span id="plName">Brani che mi piacciono</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      <button class="ib hidden" id="syncBtn" aria-label="Testo completo / sincronizzato">
-        <svg id="icSyncOn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>
-        <svg id="icSyncOff" class="hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/><path d="M3 3l18 18"/></svg>
+      <button class="ib hidden" id="syncBtn" aria-label="Modalità karaoke">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>
       </button>
       <button class="ib" id="srBtn" aria-label="Cerca un brano">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
@@ -1388,7 +1397,7 @@ async function newTrack() {
 }
 
 /* ================= Visualizzazione ================= */
-function setTrackInfo(t, a) { $("#trk .t").textContent = t; $("#trk .a").textContent = a; }
+function setTrackInfo(t, a) { $("#trk .t").textContent = t; $("#trk .a").textContent = a; $("#kHead .t").textContent = t; $("#kHead .a").textContent = a; }
 function setSrc(s) { srcBase = s; $("#src").textContent = s; }
 function setMode(m) {
   $("#stage").style.visibility = m === "lines" ? "visible" : "hidden";
@@ -1407,12 +1416,13 @@ function renderPlain() {
 }
 function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; S.songFit = null; songFitKey = ""; S.stanzas = buildStanzas(L); applyView(); }
 /* testo sincronizzato mostrato tutto intero, come quelli non sincronizzati (pulsante con le frecce circolari) */
-const fullView = () => !!store.get("fullview", false);
-function updateSyncBtn() {
-  const b = $("#syncBtn"), on = fullView();
-  b.classList.toggle("hidden", !S.lines); b.classList.toggle("on", on);
-  $("#icSyncOn").classList.toggle("hidden", on); $("#icSyncOff").classList.toggle("hidden", !on);
-  b.setAttribute("aria-label", on ? "Torna al testo sincronizzato" : "Mostra tutto il testo");
+const karaoke = () => document.body.classList.contains("karaoke");
+const fullView = () => !karaoke(); // modalità normale: testo completo con la riga cantata evidenziata
+function updateSyncBtn() { $("#syncBtn").classList.toggle("hidden", !S.lines); }
+function setKaraoke(on, quiet) {
+  document.body.classList.toggle("karaoke", on); document.body.classList.toggle("pinned", !on); store.set("karaoke", on);
+  closeSheet(); userScrollAt = -1e9; applyView(); requestAnimationFrame(fitAll);
+  if (!quiet) toast(on ? "Modalità karaoke: doppio tocco sullo schermo per tornare alla modalità normale." : "Modalità normale");
 }
 function renderFull() {
   const p = $("#plain"); p.classList.add("full");
@@ -1563,11 +1573,8 @@ function showHud() {
   hudTimer = setTimeout(() => { if (!document.body.dataset.sheet && !dragging) $("#hud").classList.add("off"); }, 4000);
 }
 function hideHud() { clearTimeout(hudTimer); $("#hud").classList.add("off"); }
-function setPinned(on, quiet) {
-  document.body.classList.toggle("pinned", on); store.set("pinned", on);
-  if (!quiet) toast(on ? "Barre fisse: doppio tocco sul testo per farle tornare a comparsa." : "Barre a comparsa: doppio tocco sul testo per fissarle.");
-  requestAnimationFrame(fitAll);
-}
+// le barre sono sempre visibili nella modalità normale (nascoste solo nella modalità karaoke)
+function setPinned() { document.body.classList.add("pinned"); requestAnimationFrame(fitAll); }
 // altezza reale della barra in basso, per lasciare spazio al testo quando è fissa
 new ResizeObserver(() => document.documentElement.style.setProperty("--botH", $("#hud .bot").offsetHeight + "px")).observe($("#hud .bot"));
 new ResizeObserver(() => document.documentElement.style.setProperty("--topH", $("#hud .top").offsetHeight + "px")).observe($("#hud .top"));
@@ -1596,7 +1603,8 @@ function toApp() {
   const nx = store.get("next", true), trOn = store.get("tr", true);
   document.body.classList.toggle("nonext", !nx); setSwitch("#swNext", nx);
   document.body.classList.toggle("notr", !trOn); setSwitch("#swTr", trOn);
-  setPinned(!!store.get("pinned", false), true);
+  const kk = !!store.get("karaoke", false);
+  document.body.classList.toggle("karaoke", kk); document.body.classList.toggle("pinned", !kk);
   setOff(); setSize(S.size); showHud(); wake(); updatePlayIcon();
   if (!S.demo) {
     showMsg("♪", "Collegamento a Spotify…"); poll();
@@ -1619,7 +1627,7 @@ function startDemo() {
   S.track = { id: "demo", name: "Demo", artist: "Karaoke · nessun accesso a Spotify", dur: 37000 };
   setTrackInfo(S.track.name, S.track.artist); setSrc("Demo");
   showLines(parseLRC(demo.map(d => "[" + d[0] + "]" + d[1]).join("\n")));
-  S.trans = new Map(demo.filter(d => d[1]).map(d => [d[1], d[2]]));
+  S.trans = new Map(demo.filter(d => d[1]).map(d => [d[1], d[2]])); applyView();
   setPlayhead(0, true); updatePlayIcon();
   clearInterval(S.demoLoop);
   S.demoLoop = setInterval(() => { if (!S.demo) return clearInterval(S.demoLoop); if (rawPos() >= S.track.dur) setPlayhead(0); }, 300);
@@ -1669,10 +1677,7 @@ $("#trBtn").onclick = openTracks;
 $("#like").onclick = toggleLike;
 $("#radioBtn").onclick = () => { showHud(); startRadio(); };
 $("#srBtn").onclick = openSearch;
-$("#syncBtn").onclick = () => {
-  store.set("fullview", !fullView()); userScrollAt = -1e9; applyView(); showHud();
-  toast(fullView() ? "Testo completo: la riga cantata è evidenziata" : "Testo sincronizzato");
-};
+$("#syncBtn").onclick = () => setKaraoke(true);
 $("#srClose").onclick = closeSheet;
 $("#srInput").oninput = () => { clearTimeout(srTimer); srTimer = setTimeout(() => runSearch(false), 350); };
 $("#srInput").onkeydown = e => { if (e.key === "Enter") { clearTimeout(srTimer); runSearch(false); e.target.blur(); } };
@@ -1777,9 +1782,8 @@ document.addEventListener("touchmove", e => { if (e.touches.length > 1) e.preven
         }
       }
       const now = performance.now();
-      if (now - lastTap < 320) { lastTap = 0; showHud(); setPinned(!document.body.classList.contains("pinned")); return; } // doppio tap: fissa / a comparsa
+      if (now - lastTap < 320) { lastTap = 0; if (karaoke()) setKaraoke(false); return; } // doppio tocco: esce dalla modalità karaoke
       lastTap = now;
-      $("#hud").classList.contains("off") ? showHud() : hideHud();
     }
   });
 });
@@ -1833,7 +1837,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 09:25";
+const APP_VERSION = "28/11/2026 09:40";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
