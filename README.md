@@ -152,6 +152,11 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 - **Orientamento:** in orizzontale la riga corrente occupa quasi tutto lo schermo.
 - **Sezioni strumentali:** al posto del testo compare **♪**.
 - **Testo senza tempi:** se un brano ha solo il testo semplice, l'app lo mostra tutto da scorrere.
+- **Testo completo** (pulsante con le due frecce circolari in alto, solo per i testi sincronizzati): mostra tutto il testo da scorrere, come quelli senza tempi.
+  - La riga cantata è evidenziata in verde e resta al centro.
+  - Se scorri tu, lo scorrimento automatico si ferma per qualche secondo.
+  - Toccando una riga il brano salta lì.
+  - Con il pulsante di nuovo (icona barrata) torni al testo sincronizzato. La scelta resta salvata.
 - **Schermo sempre acceso:** lo schermo non si spegne mentre l'app è aperta.
 
 <br clear="right">
@@ -173,6 +178,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 
 **In alto**
 - **Playlist in corso** (es. *Estate…*): toccala per scegliere un'altra playlist.
+- **Testo completo / sincronizzato** (frecce circolari): compare solo con i testi sincronizzati.
 - **Cerca** (lente): cerca un brano in tutto il catalogo Spotify.
 - **Elenco brani** (icona a lista).
 - **Impostazioni** (icona a cursori).

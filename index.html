@@ -80,6 +80,12 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #plain{position:absolute;inset:0;overflow:auto;touch-action:pan-y;padding:calc(64px + var(--sat)) 6vw calc(150px + var(--sab));
   font-size:var(--plainpx,32px);font-weight:700;line-height:1.3;text-align:center}
 #plain .pl{margin:0 0 .6em}
+#plain.full .pl{opacity:.5;transition:opacity .25s,color .25s;cursor:pointer}
+#plain.full .pl.now{opacity:1;color:var(--acc)}
+#plain.full .pl.now .tr{color:rgba(255,255,255,.75)}
+#plain.full .gap{height:.6em}
+#syncBtn.on{color:var(--acc)}
+#syncBtn.hidden{display:none}
 #plain .tr{font-size:.6em;margin-top:.15em}
 #zoomTip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;pointer-events:none;background:rgba(20,22,27,.92);border:1px solid var(--line);border-radius:16px;padding:12px 18px;font-size:18px;font-weight:700;opacity:0;transition:opacity .2s}
 #zoomTip.show{opacity:1}
@@ -338,6 +344,10 @@ body.notr #trLangRow{opacity:.45}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h12M4 12h12M4 18h7"/><path d="M17 15.5V21M17 15.5l3-1.5"/></svg>
         <span id="plName">Brani che mi piacciono</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <button class="ib hidden" id="syncBtn" aria-label="Testo completo / sincronizzato">
+        <svg id="icSyncOn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>
+        <svg id="icSyncOff" class="hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/><path d="M3 3l18 18"/></svg>
       </button>
       <button class="ib" id="srBtn" aria-label="Cerca un brano">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
@@ -1316,7 +1326,7 @@ async function ensureTranslation() {
   if (key !== id + "|" + trLang()) return; // lingua cambiata nel frattempo
   S.trans = res === "same" ? null : res; S.songFit = null; songFitKey = "";
   $("#src").textContent = srcBase + (res === "same" ? " · brano già in " + langName(trLang()).toLowerCase() : " · Traduzione: Google (" + langName(trLang()).toLowerCase() + ")");
-  if (S.lines) S.idx = -2; else if (S.plain) renderPlain();
+  if (S.lines) { S.idx = -2; if (fullView()) applyView(); } else if (S.plain) renderPlain();
 }
 function trOf(t) {
   if (!S.trans || !t) return "";
@@ -1384,18 +1394,52 @@ function setMode(m) {
   $("#stage").style.visibility = m === "lines" ? "visible" : "hidden";
   $("#msg").classList.toggle("hidden", m !== "msg");
   $("#plain").classList.toggle("hidden", m !== "plain");
-  const nav = m === "lines";
+  const nav = m === "lines" || !!(m === "plain" && S.lines);
   $("#prevSt").classList.toggle("dis", !nav); $("#nextSt").classList.toggle("dis", !nav);
 }
-function showMsg(a, b) { S.lines = null; S.plain = null; S.words = null; $("#msg .big").textContent = a; $("#msg .small").textContent = b || ""; setMode("msg"); }
-function showPlain(t) { S.lines = null; S.words = null; S.plain = t; renderPlain(); $("#plain").scrollTop = 0; setMode("plain"); }
+function showMsg(a, b) { S.lines = null; setTimeout(updateSyncBtn); S.plain = null; S.words = null; $("#msg .big").textContent = a; $("#msg .small").textContent = b || ""; setMode("msg"); }
+function showPlain(t) { S.lines = null; S.words = null; S.plain = t; $("#plain").classList.remove("full"); setTimeout(updateSyncBtn); renderPlain(); $("#plain").scrollTop = 0; setMode("plain"); }
 function renderPlain() {
   $("#plain").innerHTML = S.plain.split(/\r?\n/).map(l => {
     const tr = trOf(l);
     return '<div class="pl">' + (esc(l) || "&nbsp;") + (tr ? '<span class="tr">' + esc(tr) + "</span>" : "") + "</div>";
   }).join("");
 }
-function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; S.songFit = null; songFitKey = ""; S.stanzas = buildStanzas(L); setMode("lines"); }
+function showLines(L) { S.lines = L; S.plain = null; S.idx = -2; S.songFit = null; songFitKey = ""; S.stanzas = buildStanzas(L); applyView(); }
+/* testo sincronizzato mostrato tutto intero, come quelli non sincronizzati (pulsante con le frecce circolari) */
+const fullView = () => !!store.get("fullview", false);
+function updateSyncBtn() {
+  const b = $("#syncBtn"), on = fullView();
+  b.classList.toggle("hidden", !S.lines); b.classList.toggle("on", on);
+  $("#icSyncOn").classList.toggle("hidden", on); $("#icSyncOff").classList.toggle("hidden", !on);
+  b.setAttribute("aria-label", on ? "Torna al testo sincronizzato" : "Mostra tutto il testo");
+}
+function renderFull() {
+  const p = $("#plain"); p.classList.add("full");
+  p.innerHTML = S.lines.map((l, i) => l.text
+    ? '<div class="pl" data-i="' + i + '">' + esc(l.text) + (trOf(l.text) ? '<span class="tr">' + esc(trOf(l.text)) + "</span>" : "") + "</div>"
+    : '<div class="gap"></div>').join("");
+  S.fullIdx = -2;
+}
+function applyView() {
+  updateSyncBtn();
+  if (!S.lines) return;
+  if (fullView()) { renderFull(); setMode("plain"); userScrollAt = -1e9; } // la riga cantata viene portata al centro
+  else { $("#plain").classList.remove("full"); S.idx = -2; setMode("lines"); }
+}
+let userScrollAt = -1e9;
+// se scorri tu il testo con il dito o la rotella, lo scorrimento automatico si ferma per 4 secondi
+["touchmove", "wheel"].forEach(t => $("#plain").addEventListener(t, () => { userScrollAt = performance.now(); }, { passive: true }));
+function updateFull(i) { // evidenzia la riga cantata e la tiene in vista (se non stai scorrendo tu)
+  if (i === S.fullIdx) return; S.fullIdx = i;
+  const p = $("#plain"), old = p.querySelector(".pl.now"); if (old) old.classList.remove("now");
+  let k = i; while (k >= 0 && !(S.lines[k] && S.lines[k].text)) k--;
+  const el = k >= 0 ? p.querySelector('.pl[data-i="' + k + '"]') : null;
+  if (!el) return; el.classList.add("now");
+  if (performance.now() - userScrollAt > 4000) {
+    p.scrollTo({ top: Math.max(0, el.offsetTop - (p.clientHeight - el.offsetHeight) / 2), behavior: "smooth" });
+  }
+}
 
 function lineText(i) { return (!S.lines || i < 0 || i >= S.lines.length) ? "" : (S.lines[i].text || "♪"); }
 function setLine(sel, t) { $(sel).firstElementChild.textContent = t; }
@@ -1429,7 +1473,8 @@ function updateWords(p, i) {
 }
 let dragging = false;
 function frame() {
-  if (S.lines) {
+  if (S.lines && fullView() && !$("#plain").classList.contains("hidden")) updateFull(curIndex(pos()));
+  else if (S.lines) {
     const p = pos(), i = curIndex(p);
     if (i !== S.idx) { S.idx = i; renderLines(i); }
     if (i >= 0) updateWords(p, i);
@@ -1624,6 +1669,10 @@ $("#trBtn").onclick = openTracks;
 $("#like").onclick = toggleLike;
 $("#radioBtn").onclick = () => { showHud(); startRadio(); };
 $("#srBtn").onclick = openSearch;
+$("#syncBtn").onclick = () => {
+  store.set("fullview", !fullView()); userScrollAt = -1e9; applyView(); showHud();
+  toast(fullView() ? "Testo completo: la riga cantata è evidenziata" : "Testo sincronizzato");
+};
 $("#srClose").onclick = closeSheet;
 $("#srInput").oninput = () => { clearTimeout(srTimer); srTimer = setTimeout(() => runSearch(false), 350); };
 $("#srInput").onkeydown = e => { if (e.key === "Enter") { clearTimeout(srTimer); runSearch(false); e.target.blur(); } };
@@ -1715,6 +1764,9 @@ document.addEventListener("touchmove", e => { if (e.touches.length > 1) e.preven
       jumpLine(dx < 0 ? 1 : -1); return;
     }
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      // testo completo: toccando una riga il brano si sposta lì
+      const fl = s === "#plain" && S.lines && e.target.closest && e.target.closest(".pl[data-i]");
+      if (fl) { lastTap = 0; userScrollAt = -1e9; seekTo(S.lines[+fl.dataset.i].t - S.offset + 30); return; }
       // tocco sulla riga precedente o successiva: il brano si sposta lì
       const box = s === "#stage" && e.target.closest && e.target.closest("#prev, #next");
       if (box && S.lines && box.firstElementChild.textContent.trim()) {
@@ -1781,7 +1833,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 09:15";
+const APP_VERSION = "28/11/2026 09:25";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
