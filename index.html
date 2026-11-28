@@ -85,7 +85,7 @@ body.nonext #stage{grid-template-rows:11fr 89fr}
 #plain.full .pl.now .tr{color:rgba(255,255,255,.75)}
 #plain.full .gap{height:.6em}
 /* pulsante modalità karaoke: verde e più grande, per farlo notare */
-#hud .top #syncBtn{width:46px;height:46px;background:var(--acc);color:#000;box-shadow:0 0 0 4px rgba(30,215,96,.18),0 4px 16px rgba(30,215,96,.35)}
+#hud .top #syncBtn{order:-1;width:46px;height:46px;background:var(--acc);color:#000;box-shadow:0 0 0 4px rgba(30,215,96,.18),0 4px 16px rgba(30,215,96,.35)}
 #hud .top #syncBtn:active{transform:scale(.94);background:#19c556}
 #hud .top #syncBtn svg{width:26px;height:26px}
 /* modalità karaoke: niente barre, solo il testo sincronizzato e in alto titolo e autore in piccolo */
@@ -1843,7 +1843,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 09:55";
+const APP_VERSION = "28/11/2026 10:00";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {

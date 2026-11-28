@@ -198,7 +198,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 - I testi sincronizzati si vedono interi da scorrere. La riga cantata è evidenziata in verde e resta al centro.
 - Se scorri tu il testo, lo scorrimento automatico si ferma per qualche secondo. Toccando una riga il brano salta lì.
 
-**Modalità karaoke** (pulsante **verde con il microfono** in alto, presente solo con i testi sincronizzati).
+**Modalità karaoke** (pulsante **verde con il microfono** in alto a sinistra, presente solo con i testi sincronizzati).
 
 - Le barre spariscono e resta il testo sincronizzato riga per riga, il più grande possibile.
 - In alto compaiono in piccolo titolo e autore del brano. In fondo una linea verde sottile mostra l'avanzamento.
