@@ -424,7 +424,7 @@ body.notr #trLangRow{opacity:.45}
   </div>
   <div id="plSheet" role="dialog" aria-label="Playlist">
     <div class="grab"></div>
-    <h2>Scegli una playlist</h2>
+    <div class="trhead"><h2>Scegli una playlist</h2><button class="chip on" id="plSortBtn" aria-label="Ordinamento delle playlist">A‑Z</button></div>
     <input id="plSearch" type="search" placeholder="Cerca tra le tue playlist" autocomplete="off">
     <div id="linkBox" class="hidden">
       <div id="linkHelp"></div>
@@ -719,6 +719,7 @@ const RADIO = "radio";
    nell'elenco e non se ne possono leggere i brani, ma si possono avviare dal loro link. */
 const DW_NAME = "Discover Weekly";
 const customPl = () => store.get("custompl", []) || [];
+const plSort = () => store.get("plsort", "name"); // "name" (predefinito) oppure "spotify"
 function parsePlaylistLink(t) {
   const m = String(t).match(/playlist[\/:]([A-Za-z0-9]{22})/);
   return m ? "spotify:playlist:" + m[1] : null;
@@ -843,7 +844,10 @@ async function startRadio() {
     S.az = { plUri: RADIO, name, az: null, uris: new Set(list.map(t => t.uri)), t0: performance.now(), miss: 0 };
     // continua il brano in corso dal punto in cui è, poi i brani simili
     const ok = await play({ uris: list.map(t => t.uri), offset: { position: 0 }, position_ms: Math.round(rawPos()) });
-    if (ok) { S.shuffle = false; setPlName(name); updateOrder(); toast("Radio pronta: " + found.length + " brani simili"); S.holdUntil = 0; setTimeout(poll, 800); }
+    if (ok) {
+      S.shuffle = false; setPlName(name); updateOrder(); toast("Radio pronta: " + found.length + " brani simili"); S.holdUntil = 0; setTimeout(poll, 800);
+      openTracks(); // mostra subito l'elenco dei brani della radio
+    }
   } catch (e) { toast("Radio non disponibile: " + e.message + "."); }
   finally { radioBusy = false; $("#radioBtn").classList.remove("busy"); }
 }
@@ -883,22 +887,23 @@ async function loadPlaylists() {
   return (playlists = out);
 }
 function renderPl() {
-  const q = $("#plSearch").value.trim().toLowerCase();
-  const list = (playlists || []).filter(p => !q || (p.name || "").toLowerCase().includes(q));
-  if (!list.length) { $("#plList").innerHTML = '<p class="empty">' + (q ? "Nessuna playlist trovata." : "Non hai ancora playlist.") + "</p>"; return; }
+  const q = $("#plSearch").value.trim().toLowerCase(), match = n => !q || (n || "").toLowerCase().includes(q);
+  const byName = plSort() === "name";
+  $("#plSortBtn").textContent = byName ? "A‑Z" : "Ordine Spotify";
+  $("#plSortBtn").classList.toggle("on", byName);
   const canSave = !!(S.radio && !S.radio.saved); // radio caricata e non ancora salvata
+  // --- voci fisse in cima: Radio, Discover Weekly, Brani che mi piacciono ---
   const radioRow = (!q && S.track && S.track.type !== "episode")
     ? '<div class="plrow"><button class="pli" data-uri="' + RADIO + '" data-name=""><span class="ph radio">📻</span><div><div class="n">Radio del brano in ascolto</div><div class="o">'
       + (S.radio ? "Ultima: " + esc(S.radio.name) + (S.radio.saved ? " · salvata" : "") : "Brani simili a “" + esc(S.track.name) + "”") + "</div></div></button>"
       + (canSave ? '<button class="save" id="saveRadio">Salva</button>' : "") + "</div>" : "";
-  const cust = customPl().filter(p => !q || p.name.toLowerCase().includes(q));
-  const custRows = cust.map(p => '<div class="plrow"><button class="pli' + (p.uri === S.ctxUri ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
+  const custRow = p => '<div class="plrow"><button class="pli' + (p.uri === S.ctxUri ? " cur" : "") + '" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '">'
     + '<span class="ph ' + (p.dw ? "dw" : "") + '">' + (p.dw ? "✦" : "♪") + '</span><div><div class="n">' + esc(p.name) + '</div><div class="o">'
-    + (p.dw ? "Scopri settimanale · collegata da link" : "Collegata da link") + '</div></div></button><button class="rm" data-rm="' + esc(p.uri) + '" aria-label="Rimuovi">✕</button></div>').join("");
-  const dwRow = (!q && !customPl().some(p => p.dw)) ? '<button class="pli" data-link="dw"><span class="ph dw">✦</span><div><div class="n">' + DW_NAME
-    + '</div><div class="o">Scopri settimanale · tocca per collegarla</div></div></button>' : "";
-  const addRow = !q ? '<button class="pli" data-link="any"><span class="ph">＋</span><div><div class="n">Aggiungi playlist da link</div><div class="o">Per le playlist che non compaiono qui</div></div></button>' : "";
-  $("#plList").innerHTML = radioRow + custRows + dwRow + list.map(p => {
+    + (p.dw ? "Scopri settimanale · collegata da link" : "Collegata da link") + '</div></div></button><button class="rm" data-rm="' + esc(p.uri) + '" aria-label="Rimuovi">✕</button></div>';
+  const dw = customPl().find(p => p.dw);
+  const dwRow = dw ? (match(dw.name) ? custRow(dw) : "")
+    : (!q ? '<button class="pli" data-link="dw"><span class="ph dw">✦</span><div><div class="n">' + DW_NAME + '</div><div class="o">Scopri settimanale · tocca per collegarla</div></div></button>' : "");
+  const plRow = p => {
     const img = (p.images || []).filter(Boolean).slice(-1)[0];
     const n = ((p.items || p.tracks || {}).total);
     const sub = [(p.owner && p.owner.display_name) || "", n != null ? n + " brani" : ""].filter(Boolean).join(" · ");
@@ -907,7 +912,17 @@ function renderPl() {
       + '<div><div class="n">' + esc(p.name) + '</div><div class="o">' + esc(sub) + "</div></div></button>";
     // le playlist vere si possono eliminare scorrendo verso sinistra
     return p.liked ? btn : '<div class="swrow" data-uri="' + esc(p.uri) + '" data-name="' + esc(p.name) + '" data-own="' + (p.owner && p.owner.id && S.meId && p.owner.id === S.meId ? 1 : 0) + '"><button class="del" tabindex="-1">Elimina</button>' + btn + "</div>";
-  }).join("") + addRow;
+  };
+  const all = playlists || [];
+  const liked = all.find(p => p.liked);
+  const likedRow = liked && match(liked.name) ? plRow(liked) : "";
+  // --- tutte le altre: per nome (predefinito) oppure nell'ordine di Spotify ---
+  let rest = customPl().filter(p => !p.dw && match(p.name)).map(p => ({ name: p.name, html: custRow(p) }))
+    .concat(all.filter(p => !p.liked && match(p.name)).map(p => ({ name: p.name || "", html: plRow(p) })));
+  if (byName) rest.sort((a, b) => cmp(a.name, b.name));
+  const addRow = !q ? '<button class="pli" data-link="any"><span class="ph">＋</span><div><div class="n">Aggiungi playlist da link</div><div class="o">Per le playlist che non compaiono qui</div></div></button>' : "";
+  const html = radioRow + dwRow + likedRow + rest.map(r => r.html).join("");
+  $("#plList").innerHTML = html ? html + addRow : '<p class="empty">' + (q ? "Nessuna playlist trovata." : "Non hai ancora playlist.") + "</p>" + addRow;
 }
 async function openPlaylists() {
   if (S.demo) { toast("Nella demo non ci sono playlist: accedi con Spotify."); return; }
@@ -1595,6 +1610,7 @@ $("#plList").onclick = e => {
   if (b.dataset.uri === RADIO) startRadio(); else choosePlaylist(b.dataset.uri, b.dataset.name);
 };
 $("#linkOk").onclick = addLinkedPlaylist;
+$("#plSortBtn").onclick = () => { store.set("plsort", plSort() === "name" ? "spotify" : "name"); renderPl(); $("#plList").scrollTop = 0; };
 $("#linkCancel").onclick = () => $("#linkBox").classList.add("hidden");
 $("#linkInput").onkeydown = e => { if (e.key === "Enter") addLinkedPlaylist(); };
 $("#lfmKey").value = store.get("lfmkey", "");
@@ -1761,7 +1777,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "28/11/2026 09:00";
+const APP_VERSION = "28/11/2026 09:10";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {

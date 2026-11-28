@@ -204,6 +204,8 @@ Un altro doppio tocco rimette le barre a comparsa. La scelta resta salvata.
 
 Tocca il nome della playlist in alto per vedere tutte le tue playlist, con ricerca. Toccandone una, parte subito su Spotify.
 
+In cima restano sempre, in quest'ordine, **Radio del brano in ascolto**, **Discover Weekly** e **Brani che mi piacciono**. Le altre playlist sono in ordine alfabetico; il pulsante **A‑Z** in alto a destra passa all'ordine di Spotify e viceversa.
+
 **Eliminare una playlist:** scorri il suo nome verso sinistra.
 
 - **Scorrimento breve:** compare il pulsante rosso **Elimina**, da toccare.
@@ -217,6 +219,7 @@ In cima all'elenco ci sono anche:
 
 - **📻 Radio del brano in ascolto:** crea una coda di circa 30 brani simili a quello che stai ascoltando e la fa partire senza interrompere il brano in corso.
   - I brani simili vengono da [Last.fm](https://www.last.fm/api), perché Spotify non offre più i suoi consigli alle app nuove. Ognuno viene poi cercato su Spotify.
+  - Appena la radio è pronta si apre l'elenco dei suoi brani.
   - Il pulsante **Salva** accanto alla voce salva l'ultima radio creata tra le tue playlist Spotify, come playlist privata. Prima ti chiede il nome, che puoi cambiare. Compare solo se c'è una radio non ancora salvata.
   - Serve una **chiave API Last.fm**, gratuita: creala su [last.fm/api/account/create](https://www.last.fm/api/account/create) e incollala nelle impostazioni.
 - **✦ Discover Weekly** (*Scopri settimanale*): Spotify non la include nell'elenco delle playlist, quindi va collegata una volta con il suo link. Nell'app Spotify apri la playlist, poi *⋯ → Condividi → Copia link*, e incolla il link nell'app karaoke.
