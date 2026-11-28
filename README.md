@@ -165,7 +165,7 @@ Gli **aggiornamenti arrivano da soli**. Quando c'è una versione nuova l'app si 
 | **Scorrimento** verso l'alto o verso il basso | Strofa successiva o precedente (sul PC: rotella del mouse) |
 | **Scorrimento** a sinistra o a destra | Riga successiva o precedente |
 | **Pizzico** con due dita | Allarghi per ingrandire il testo, stringi per rimpicciolirlo (da 1/10 a Max) |
-| **Doppio tocco** | Fissa la barra in basso, oppure la rimette a comparsa |
+| **Doppio tocco** | Fissa le barre in alto e in basso, oppure le rimette a comparsa |
 
 ### Comandi
 
@@ -193,9 +193,9 @@ I comandi spariscono da soli dopo qualche secondo. Una linea verde sottile in fo
 
 <img src="docs/05-barra-fissa-t4.png" width="240" align="right" alt="Barra in basso fissa">
 
-Con un **doppio tocco** sul testo la barra in basso resta sempre visibile. Il testo si sposta sopra la barra e si ridimensiona nello spazio che resta.
+Con un **doppio tocco** sul testo la barra in alto e quella in basso restano sempre visibili. Il testo si sistema nello spazio tra le due barre e si ridimensiona di conseguenza.
 
-Un altro doppio tocco rimette la barra a comparsa. La scelta resta salvata.
+Un altro doppio tocco rimette le barre a comparsa. La scelta resta salvata.
 
 <br clear="right">
 

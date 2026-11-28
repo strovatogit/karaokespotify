@@ -101,6 +101,10 @@ body.pinned #stage{padding-bottom:calc(var(--botH,170px) - 18px)}
 body.pinned #msg{bottom:calc(var(--botH,170px) - 30px)}
 body.pinned #plain{padding-bottom:calc(var(--botH,170px) + 20px)}
 body.pinned #mini{display:none}
+/* barra in alto fissa insieme a quella in basso: il testo sta in mezzo */
+body.pinned #hud .top{opacity:1;pointer-events:auto;background:linear-gradient(rgba(8,9,12,.97) calc(100% - 26px),rgba(8,9,12,0))}
+body.pinned #stage{padding-top:calc(var(--topH,64px) - 14px)}
+body.pinned #msg{top:calc(var(--topH,64px) - 20px)}
 #hud .top{top:0;display:flex;align-items:center;gap:12px;
   padding:calc(10px + var(--sat)) calc(12px + var(--sar)) 28px calc(16px + var(--sal));
   background:linear-gradient(rgba(8,9,12,.95) 40%,rgba(8,9,12,0))}
@@ -1490,11 +1494,12 @@ function showHud() {
 function hideHud() { clearTimeout(hudTimer); $("#hud").classList.add("off"); }
 function setPinned(on, quiet) {
   document.body.classList.toggle("pinned", on); store.set("pinned", on);
-  if (!quiet) toast(on ? "Barra fissa: doppio tocco sul testo per farla tornare a comparsa." : "Barra a comparsa: doppio tocco sul testo per fissarla.");
+  if (!quiet) toast(on ? "Barre fisse: doppio tocco sul testo per farle tornare a comparsa." : "Barre a comparsa: doppio tocco sul testo per fissarle.");
   requestAnimationFrame(fitAll);
 }
 // altezza reale della barra in basso, per lasciare spazio al testo quando è fissa
 new ResizeObserver(() => document.documentElement.style.setProperty("--botH", $("#hud .bot").offsetHeight + "px")).observe($("#hud .bot"));
+new ResizeObserver(() => document.documentElement.style.setProperty("--topH", $("#hud .top").offsetHeight + "px")).observe($("#hud .top"));
 let toastTimer = null;
 function toast(msg, label, fn) {
   const t = $("#toast"); t.firstElementChild.textContent = msg;
@@ -1749,7 +1754,7 @@ document.querySelectorAll(".install").forEach(b => b.onclick = async () => {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; document.querySelectorAll(".install").forEach(x => x.classList.add("hidden"));
 });
-const APP_VERSION = "27/11/2026 23:50";
+const APP_VERSION = "28/11/2026 08:45";
 if ("serviceWorker" in navigator && window.isSecureContext) {
   const hadSW = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
